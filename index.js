@@ -4,6 +4,8 @@ const cors = require("cors");
 const sequelize = require("./config/sequelize");
 const ssrRoutes = require("./routes/ssr.route");
 const userRoutes = require("./routes/userRoutes");
+const salesRoutes = require('./routes/salesRoutes');
+require('./models/associations');
 
 const app = express();
 
@@ -20,6 +22,7 @@ app.get("/api/data", (req, res) => {
 });
 
 app.use("/api/ssr", ssrRoutes);
+app.use('/api/sales-reps', salesRoutes);
 
 const PORT = process.env.PORT || 3000;
 
