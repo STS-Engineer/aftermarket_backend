@@ -1,252 +1,663 @@
-// ssr.mailer.js
-const nodemailer = require('nodemailer');
-const jwt        = require('jsonwebtoken');
+const nodemailer = require('nodemailer')
+const jwt = require('jsonwebtoken')
 
 const transporter = nodemailer.createTransport({
-  host:       process.env.SMTP_HOST,
-  port:       parseInt(process.env.SMTP_PORT || '587', 10),
-  secure:     process.env.SMTP_SECURE === 'true',
-  requireTLS: true,
+  host: process.env.SMTP_HOST,
+  port: parseInt(process.env.SMTP_PORT || '587', 10),
+  secure: process.env.SMTP_SECURE === 'true',
+  requireTLS: process.env.SMTP_SECURE !== 'true',
   auth: process.env.SMTP_USER ? {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
   } : undefined,
   tls: { rejectUnauthorized: false },
-});
+})
 
-function generateSSRToken(ssrId, role) {
-  return jwt.sign(
-    { ssrId, role },
-    process.env.JWT_SECRET,
-    { expiresIn: '90d' },
-  );
+const getRecipients = () => (
+  [
+    { key: 'fadwa', name: process.env.FADWA_NAME || 'Fadwa', email: process.env.FADWA_EMAIL },
+    { key: 'hamdi', name: process.env.HAMDI_NAME || 'Hamdi', email: process.env.HAMDI_EMAIL },
+    { key: 'aziza', name: process.env.AZIZA_NAME || 'Aziza', email: process.env.AZIZA_EMAIL },
+  ].filter((recipient) => recipient.email)
+)
+
+const getRecipientByKey = (key) => getRecipients().find((recipient) => recipient.key === key) || null
+
+const generateFourMAccessToken = (ssrId) => jwt.sign(
+  { ssrId, purpose: 'four_m_validation_access' },
+  process.env.JWT_SECRET,
+  { expiresIn: '30d' }
+)
+
+const generateStsAccessToken = (ssrId) => jwt.sign(
+  { ssrId, purpose: 'sts_form_access' },
+  process.env.JWT_SECRET,
+  { expiresIn: '30d' }
+)
+
+const verifyFourMAccessToken = (token) => jwt.verify(token, process.env.JWT_SECRET)
+const verifyStsAccessToken = (token) => jwt.verify(token, process.env.JWT_SECRET)
+
+const escapeHtml = (value) => String(value ?? '')
+  .replace(/&/g, '&amp;')
+  .replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;')
+  .replace(/'/g, '&#39;')
+
+const formatDate = (value) => {
+  if (!value) return '-'
+
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return escapeHtml(value)
+
+  return new Intl.DateTimeFormat('fr-FR', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  }).format(date)
 }
 
-function verifySSRToken(token) {
-  return jwt.verify(token, process.env.JWT_SECRET);
+const getKamName = (ssr) => {
+  if (ssr?.kam && typeof ssr.kam === 'object') {
+    const fullName = [ssr.kam.first_name, ssr.kam.last_name].filter(Boolean).join(' ').trim()
+    if (fullName) return fullName
+  }
+
+  if (typeof ssr?.kam === 'string' && ssr.kam.trim()) {
+    return ssr.kam.trim()
+  }
+
+  if (ssr?.kam_id) {
+    return `KAM #${ssr.kam_id}`
+  }
+
+  return '-'
 }
 
-// ── Shared helpers ────────────────────────────────────────────────────────────
+const fieldCard = (label, value) => `
+  <td style="padding:0 8px 12px;vertical-align:top;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="
+      border:1px solid #e5e7eb;
+      border-radius:10px;
+      background:#f9fafb;
+      border-collapse:separate;
+    ">
+      <tr>
+        <td style="
+          padding:10px 11px 6px;
+          color:#6b7280;
+          font-size:11px;
+          font-weight:600;
+          letter-spacing:0.03em;
+          text-transform:uppercase;
+        ">${escapeHtml(label)}</td>
+      </tr>
+      <tr>
+        <td style="
+          padding:0 11px 11px;
+          color:#0d1117;
+          font-size:14px;
+          line-height:1.5;
+          font-weight:500;
+          word-break:break-word;
+        ">${escapeHtml(value || '-')}</td>
+      </tr>
+    </table>
+  </td>
+`
 
-const row = (label, value, shade) => `
-  <tr style="background:${shade ? '#eef2f7' : '#ffffff'};">
-    <td style="padding:12px 16px;font-size:13px;color:#1e3a5f;font-weight:700;
-               white-space:nowrap;border-bottom:1px solid #d1d5db;width:38%;">${label}</td>
-    <td style="padding:12px 16px;font-size:13px;color:#111827;font-weight:500;
-               border-bottom:1px solid #d1d5db;">${value || '—'}</td>
-  </tr>`;
-
-const ssrRows = (ssr) => `
-  ${row('Référence SSR',    ssr.reference,    false)}
-  ${row('Désignation',      ssr.designation,  true)}
-  ${row('Quantité',         ssr.quantity,     false)}
-  ${row('Demandeur',        ssr.requester,    true)}
-  ${row('Date de demande',  ssr.date,         false)}
-  ${ssr.comment ? row('Commentaire', ssr.comment, true) : ''}
-`;
-
-const emailWrapper = (headerColor, title, subtitle, recipientName, bodyContent) => `
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-  <title>${title}</title>
-</head>
-<body style="margin:0;padding:0;background-color:#f1f5f9;font-family:'Segoe UI',Arial,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f9;padding:40px 16px;">
-    <tr><td align="center">
-      <table width="620" cellpadding="0" cellspacing="0"
-             style="max-width:620px;background:#ffffff;border-radius:16px;
-                    box-shadow:0 4px 24px rgba(0,0,0,0.08);overflow:hidden;">
-
-        <!-- Header -->
-        <tr>
-          <td style="background:#ffffff;border-bottom:3px solid ${headerColor};
-                     padding:32px 40px;text-align:center;">
-            <p style="margin:0 0 6px;font-size:11px;font-weight:700;letter-spacing:3px;
-                      color:#1e3a5f;text-transform:uppercase;">AVOCarbon — Administration STS</p>
-            <h1 style="margin:0;font-size:24px;font-weight:700;color:#1e3a5f;line-height:1.3;">
-              ${title}
-            </h1>
-            <p style="margin:10px 0 0;font-size:13px;color:#1e3a5f;opacity:0.75;">
-              ${subtitle}
-            </p>
-          </td>
-        </tr>
-
-        <!-- Body -->
-        <tr>
-          <td style="padding:36px 40px 28px;">
-            <p style="margin:0 0 20px;font-size:15px;color:#111827;font-weight:600;line-height:1.6;">
-              Bonjour <strong style="color:#1e3a5f;">${recipientName}</strong>,
-            </p>
-            ${bodyContent}
-          </td>
-        </tr>
-
-        <!-- Footer -->
-        <tr>
-          <td style="background:#f8fafc;border-top:1px solid #e5e7eb;
-                     padding:20px 40px;text-align:center;">
-            <p style="margin:0;font-size:11px;color:#9ca3af;line-height:1.6;">
-              &copy; ${new Date().getFullYear()} AVOCarbon — Administration STS. Tous droits réservés.<br/>
-              Ceci est un message automatique, veuillez ne pas répondre directement à cet email.
-            </p>
-          </td>
-        </tr>
-
-      </table>
-    </td></tr>
+const sectionCard = ({ icon, title, subtitle, rows, fullWidth = false }) => `
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="
+    margin:0 0 10px;
+    background:#ffffff;
+    border:1px solid #e5e7eb;
+    border-radius:14px;
+    box-shadow:0 1px 3px rgba(13,17,23,0.06), 0 1px 2px rgba(13,17,23,0.04);
+    border-collapse:separate;
+  ">
+    <tr>
+      <td style="
+        padding:14px 20px;
+        border-bottom:1px solid #e5e7eb;
+        background:#fafafa;
+        border-radius:14px 14px 0 0;
+      ">
+        <table role="presentation" cellpadding="0" cellspacing="0">
+          <tr>
+            <td style="padding-right:11px;vertical-align:top;">
+              <div style="
+                width:28px;
+                height:28px;
+                border-radius:8px;
+                background:rgba(249,115,22,0.07);
+                border:1px solid rgba(249,115,22,0.30);
+                color:#f97316;
+                text-align:center;
+                line-height:28px;
+                font-size:13px;
+                font-weight:700;
+              ">${icon}</div>
+            </td>
+            <td>
+              <div style="
+                font-size:12px;
+                font-weight:600;
+                color:#0d1117;
+                letter-spacing:0.02em;
+                text-transform:uppercase;
+                line-height:1.2;
+                margin-bottom:3px;
+              ">${escapeHtml(title)}</div>
+              <div style="
+                font-size:11px;
+                color:#9ca3af;
+                line-height:1.4;
+              ">${escapeHtml(subtitle)}</div>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+    <tr>
+      <td style="padding:${fullWidth ? '18px 20px' : '18px 12px 6px'};">
+        ${rows}
+      </td>
+    </tr>
   </table>
-</body>
-</html>`;
+`
 
-// ── Email 1 : Fadwa — lien vers le formulaire de validation ──────────────────
+const twoColumnRow = (leftLabel, leftValue, rightLabel, rightValue) => `
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+    <tr>
+      ${fieldCard(leftLabel, leftValue)}
+      ${fieldCard(rightLabel, rightValue)}
+    </tr>
+  </table>
+`
 
-async function sendSSREmail1({ ssr }) {
-  const token      = generateSSRToken(ssr.id, 'fadwa');
-  const base       = process.env.BACKEND_URL || 'http://localhost:3000';
-  const formUrl    = `${base}/api/ssr-actions/form1/${token}`;
+const fullWidthRow = (label, value) => `
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+    <tr>
+      ${fieldCard(label, value)}
+    </tr>
+  </table>
+`
 
-  const fadwaEmail = process.env.FADWA_EMAIL;
-  const fadwaName  = process.env.FADWA_NAME || 'Fadwa';
+const formatBooleanStatus = (value) => {
+  if (value === true) return 'OK'
+  if (value === false) return 'NOK'
+  return '-'
+}
 
-  const bodyContent = `
-    <p style="margin:0 0 28px;font-size:14px;color:#1f2937;line-height:1.7;">
-      Une nouvelle <strong>Small Serial Request</strong> vient d'être créée et nécessite
-      votre traitement via le formulaire ci-dessous.
-    </p>
+const formatRawMaterialsForEmail = (rawMaterials = []) => {
+  if (!Array.isArray(rawMaterials) || rawMaterials.length === 0) {
+    return fullWidthRow('Raw Materials', 'No raw materials provided')
+  }
 
-    <!-- SSR details -->
-    <div style="border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;margin-bottom:28px;">
-      <div style="background:#1e3a5f;padding:12px 16px;">
-        <p style="margin:0;font-size:12px;font-weight:700;letter-spacing:1px;
-                  color:#93c5fd;text-transform:uppercase;">Détails de la SSR</p>
-      </div>
-      <table width="100%" cellpadding="0" cellspacing="0">
-        ${ssrRows(ssr)}
-      </table>
-    </div>
+  const rows = rawMaterials.map((row, index) => `
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+      <tr>
+        ${fieldCard(`RM ${index + 1} Part Reference`, row.partReference)}
+        ${fieldCard(`RM ${index + 1} Designation`, row.referenceDesignation)}
+      </tr>
+      <tr>
+        ${fieldCard(`RM ${index + 1} Qty / Unit`, row.quantityPerUnit)}
+        ${fieldCard(`RM ${index + 1} Current Stock`, row.rmCurrentStock)}
+      </tr>
+      <tr>
+        ${fieldCard(`RM ${index + 1} Last Purchase Price`, row.lastPurchasePrice)}
+      </tr>
+    </table>
+  `).join('')
 
-    <!-- CTA -->
-    <p style="margin:0 0 20px;font-size:14px;color:#111827;font-weight:700;text-align:center;">
-      Accédez au formulaire pour traiter cette demande&nbsp;:
-    </p>
-    <table width="100%" cellpadding="0" cellspacing="0">
+  return rows
+}
+
+const buildActionCard = ({ title, description, actionUrl, buttonLabel }) => `
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="
+    margin:0 0 10px;
+    background:#ffffff;
+    border:1px solid #e5e7eb;
+    border-radius:14px;
+    box-shadow:0 1px 3px rgba(13,17,23,0.06), 0 1px 2px rgba(13,17,23,0.04);
+    border-collapse:separate;
+  ">
+    <tr>
+      <td style="padding:18px 20px;">
+        <div style="
+          font-size:12px;
+          font-weight:600;
+          color:#0d1117;
+          letter-spacing:0.02em;
+          text-transform:uppercase;
+          line-height:1.2;
+          margin-bottom:8px;
+        ">${escapeHtml(title)}</div>
+        <p style="
+          margin:0 0 16px;
+          font-size:13px;
+          color:#6b7280;
+          line-height:1.6;
+        ">
+          ${escapeHtml(description)}
+        </p>
+        <table role="presentation" cellpadding="0" cellspacing="0" style="border-collapse:separate;">
+          <tr>
+            <td bgcolor="#f97316" style="
+              border-radius:10px;
+              border:1px solid #ea580c;
+              background:#f97316;
+              background-color:#f97316;
+              box-shadow:0 3px 10px rgba(249,115,22,.35), inset 0 1px 0 rgba(255,255,255,.12);
+              text-align:center;
+            ">
+              <a href="${escapeHtml(actionUrl)}" style="
+                display:inline-block;
+                padding:10px 16px;
+                border-radius:10px;
+                font-size:13px;
+                font-weight:600;
+                letter-spacing:0.01em;
+                color:#ffffff;
+                text-decoration:none;
+                background:#f97316;
+                background-color:#f97316;
+                white-space:nowrap;
+              ">
+                ${escapeHtml(buttonLabel)}
+              </a>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+`
+
+const buildHtml = ({ recipientName, ssr, action = null }) => `
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>New Small Serial Request</title>
+  </head>
+  <body style="margin:0;padding:0;background:#f3f4f6;font-family:'Geist','Segoe UI',system-ui,sans-serif;color:#111827;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4f6;padding:32px 12px;">
       <tr>
         <td align="center">
-          <a href="${formUrl}"
-             style="display:inline-block;padding:12px 32px;background:#1e3a5f;
-                    color:#ffffff;text-decoration:none;border-radius:8px;
-                    font-size:14px;font-weight:700;letter-spacing:0.4px;
-                    border:1px solid #1e3a5f;">
-            📋 &nbsp;Ouvrir le Formulaire
-          </a>
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:1100px;">
+            <tr>
+              <td style="padding:0 0 24px;">
+                <div style="
+                  display:inline-block;
+                  padding:3px 9px;
+                  border:1px solid rgba(249,115,22,0.30);
+                  border-radius:999px;
+                  background:rgba(249,115,22,0.07);
+                  color:#ea580c;
+                  font-size:10px;
+                  font-weight:600;
+                  letter-spacing:0.09em;
+                  text-transform:uppercase;
+                  margin-bottom:10px;
+                ">Small Serial Request</div>
+                <h1 style="
+                  margin:0 0 5px;
+                  font-size:24px;
+                  font-weight:700;
+                  color:#0d1117;
+                  letter-spacing:-0.035em;
+                  line-height:1.2;
+                ">Create a New Request</h1>
+                <p style="
+                  margin:0;
+                  font-size:13px;
+                  color:#6b7280;
+                  line-height:1.55;
+                ">
+                  Fill in all required fields to submit a production request to the team.
+                </p>
+              </td>
+            </tr>
+
+            <tr>
+              <td>
+                <div style="
+                  display:flex;
+                  align-items:center;
+                  gap:9px;
+                  padding:10px 14px;
+                  border-radius:10px;
+                  background:rgba(16,185,129,0.08);
+                  border:1px solid rgba(16,185,129,0.22);
+                  color:#065f46;
+                  font-size:13px;
+                  font-weight:500;
+                  margin-bottom:10px;
+                ">
+                  <span style="
+                    display:inline-block;
+                    width:18px;
+                    height:18px;
+                    line-height:18px;
+                    text-align:center;
+                    border-radius:50%;
+                    background:#10b981;
+                    color:#ffffff;
+                    font-size:10px;
+                    font-weight:700;
+                  ">✓</span>
+                  Request submitted successfully for ${escapeHtml(recipientName)}.
+                </div>
+
+                ${action ? buildActionCard(action) : ''}
+
+                ${sectionCard({
+                  icon: 'P',
+                  title: 'Product Information',
+                  subtitle: 'Reference, designation and family',
+                  rows: `
+                    ${twoColumnRow('Product Reference', ssr.productReference, 'Reference Designation', ssr.referenceDesignation)}
+                    ${fullWidthRow('Product Family', ssr.productFamily)}
+                  `,
+                })}
+
+                ${sectionCard({
+                  icon: 'C',
+                  title: 'Customer Information',
+                  subtitle: 'Account name and key account manager',
+                  rows: `
+                    ${twoColumnRow('Customer Name', ssr.customerName || '-', 'KAM', getKamName(ssr))}
+                  `,
+                })}
+
+                ${sectionCard({
+                  icon: 'O',
+                  title: 'Order Details',
+                  subtitle: 'Production site, quantity and requested date',
+                  rows: `
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+                      <tr>
+                        ${fieldCard('Plant', ssr.plant)}
+                        ${fieldCard('Quantity', ssr.quantityRequested)}
+                      </tr>
+                    </table>
+                    ${fullWidthRow('Date Requested', formatDate(ssr.dateRequested))}
+                  `,
+                })}
+
+                ${sectionCard({
+                  icon: 'N',
+                  title: 'Notes',
+                  subtitle: 'KAM note for the internal team',
+                  rows: `
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="
+                      border:1px solid #e5e7eb;
+                      border-radius:10px;
+                      background:#f9fafb;
+                      border-collapse:separate;
+                    ">
+                      <tr>
+                        <td style="
+                          padding:10px 11px 6px;
+                          color:#6b7280;
+                          font-size:11px;
+                          font-weight:600;
+                          letter-spacing:0.03em;
+                          text-transform:uppercase;
+                        ">KAM Note</td>
+                      </tr>
+                      <tr>
+                        <td style="
+                          padding:0 11px 14px;
+                          color:#0d1117;
+                          font-size:14px;
+                          line-height:1.6;
+                          min-height:96px;
+                        ">${escapeHtml(ssr.kamNote || '-')}</td>
+                      </tr>
+                    </table>
+                  `,
+                  fullWidth: true,
+                })}
+              </td>
+            </tr>
+
+            <tr>
+              <td style="
+                padding:14px 20px;
+                border-top:1px solid #e5e7eb;
+                background:#fafafa;
+                border-radius:14px;
+              ">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                  <tr>
+                    <td style="
+                      font-size:13px;
+                      color:#6b7280;
+                      line-height:1.7;
+                    ">
+                      This is an automatic notification sent after the creation of a small serial request.
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+
+            <tr>
+              <td style="padding:16px 8px 0;text-align:center;">
+                <p style="margin:0;color:#9ca3af;font-size:11px;line-height:1.7;">
+                  AVOCarbon Administration STS<br />
+                  This email was generated automatically.
+                </p>
+              </td>
+            </tr>
+          </table>
         </td>
       </tr>
     </table>
+  </body>
+</html>
+`
 
-    <p style="margin:24px 0 0;font-size:12px;color:#6b7280;text-align:center;font-weight:500;">
-      ⏱ Ce lien est valide pendant <strong style="color:#374151;">3 mois</strong>.
-      Si le bouton ne fonctionne pas, copiez ce lien dans votre navigateur&nbsp;:<br/>
-      <span style="font-size:11px;color:#9ca3af;word-break:break-all;">${formUrl}</span>
-    </p>`;
+const buildSubject = (ssr) => `[AVOCarbon] New SSR - ${ssr.productReference}`
+const buildStsCompletionSubject = (ssr) => `[AVOCarbon] STS Form Submitted - ${ssr.productReference}`
 
-  const html = emailWrapper(
-    '#1e3a5f',
-    'Nouveau Formulaire SSR à Traiter',
-    'Une Small Serial Request requiert votre intervention',
-    fadwaName,
-    bodyContent,
-  );
+const getRecipientAction = ({ recipientKey, ssrId, frontendBaseUrl }) => {
+  if (recipientKey === 'fadwa') {
+    const token = generateFourMAccessToken(ssrId)
 
-  await transporter.sendMail({
-    from:    process.env.SMTP_FROM || 'administration.STS@avocarbon.com',
-    to:      fadwaEmail,
-    subject: `[AVOCarbon] Nouvelle SSR — Formulaire à compléter : ${ssr.reference || ssr.id}`,
-    html,
-  });
+    return {
+      title: 'Next Step',
+      description: 'Open the 4M validation form for this request. The request information will already be loaded.',
+      actionUrl: `${frontendBaseUrl}/4M-validation/${token}`,
+      buttonLabel: 'Open 4M Validation Form',
+    }
+  }
 
-  console.log(`📧 SSR Email 1 envoyé à Fadwa (${fadwaEmail})`);
+  if (recipientKey === 'hamdi' || recipientKey === 'aziza') {
+    const token = generateStsAccessToken(ssrId)
+
+    return {
+      title: 'Next Step',
+      description: 'Open the STS form for this request. The request information will already be loaded.',
+      actionUrl: `${frontendBaseUrl}/sts-form/${token}`,
+      buttonLabel: 'Open STS Form',
+    }
+  }
+
+  return null
 }
 
-// ── Email 2 : Hamdi & Aziza — lien de consultation / validation ──────────────
+const sendNewSmallSerialRequestEmails = async ({ ssr }) => {
+  const recipients = getRecipients()
 
-async function sendSSREmail2({ ssr }) {
-  const token   = generateSSRToken(ssr.id, 'validator');
-  const base    = process.env.BACKEND_URL || 'http://localhost:3000';
-  const formUrl = `${base}/api/ssr-actions/form2/${token}`;
-
-  const recipients = [
-    { name: process.env.HAMDI_NAME  || 'Hamdi',  email: process.env.HAMDI_EMAIL  },
-    { name: process.env.AZIZA_NAME  || 'Aziza',  email: process.env.AZIZA_EMAIL  },
-  ].filter(r => r.email);
+  if (recipients.length === 0) {
+    console.warn('No SSR email recipients configured in .env')
+    return
+  }
 
   for (const recipient of recipients) {
-    const bodyContent = `
-      <p style="margin:0 0 28px;font-size:14px;color:#1f2937;line-height:1.7;">
-        Une nouvelle <strong>Small Serial Request</strong> a été soumise et est disponible
-        pour consultation et validation via le lien ci-dessous.
-      </p>
-
-      <!-- SSR details -->
-      <div style="border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;margin-bottom:28px;">
-        <div style="background:#1e3a5f;padding:12px 16px;">
-          <p style="margin:0;font-size:12px;font-weight:700;letter-spacing:1px;
-                    color:#93c5fd;text-transform:uppercase;">Détails de la SSR</p>
-        </div>
-        <table width="100%" cellpadding="0" cellspacing="0">
-          ${ssrRows(ssr)}
-        </table>
-      </div>
-
-      <!-- CTA -->
-      <p style="margin:0 0 20px;font-size:14px;color:#111827;font-weight:700;text-align:center;">
-        Accédez au formulaire de validation&nbsp;:
-      </p>
-      <table width="100%" cellpadding="0" cellspacing="0">
-        <tr>
-          <td align="center">
-            <a href="${formUrl}"
-               style="display:inline-block;padding:12px 32px;background:#16a34a;
-                      color:#ffffff;text-decoration:none;border-radius:8px;
-                      font-size:14px;font-weight:700;letter-spacing:0.4px;
-                      border:1px solid #15803d;">
-              ✓ &nbsp;Accéder au Formulaire de Validation
-            </a>
-          </td>
-        </tr>
-      </table>
-
-      <p style="margin:24px 0 0;font-size:12px;color:#6b7280;text-align:center;font-weight:500;">
-        ⏱ Ce lien est valide pendant <strong style="color:#374151;">3 mois</strong>.
-        Si le bouton ne fonctionne pas, copiez ce lien dans votre navigateur&nbsp;:<br/>
-        <span style="font-size:11px;color:#9ca3af;word-break:break-all;">${formUrl}</span>
-      </p>`;
-
-    const html = emailWrapper(
-      '#16a34a',
-      'Nouvelle SSR — Validation Requise',
-      'Une Small Serial Request est en attente de votre validation',
-      recipient.name,
-      bodyContent,
-    );
+    const frontendBaseUrl = process.env.FRONTEND_URL || 'http://localhost:5173'
+    const action = getRecipientAction({
+      recipientKey: recipient.key,
+      ssrId: ssr.id,
+      frontendBaseUrl,
+    })
 
     await transporter.sendMail({
-      from:    process.env.SMTP_FROM || 'administration.STS@avocarbon.com',
-      to:      recipient.email,
-      subject: `[AVOCarbon] SSR à valider : ${ssr.reference || ssr.id}`,
-      html,
-    });
-
-    console.log(`📧 SSR Email 2 envoyé à ${recipient.name} (${recipient.email})`);
+      from: process.env.SMTP_FROM || process.env.SMTP_USER,
+      to: recipient.email,
+      subject: buildSubject(ssr),
+      html: buildHtml({
+        recipientName: recipient.name,
+        ssr,
+        action,
+      }),
+    })
   }
 }
 
+const buildStsCompletionHtml = ({ recipientName, ssr, fourMValidation, stsForm }) => `
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>STS Form Submitted</title>
+  </head>
+  <body style="margin:0;padding:0;background:#f3f4f6;font-family:'Geist','Segoe UI',system-ui,sans-serif;color:#111827;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4f6;padding:32px 12px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:1100px;">
+            <tr>
+              <td style="padding:0 0 24px;">
+                <div style="
+                  display:inline-block;
+                  padding:3px 9px;
+                  border:1px solid rgba(249,115,22,0.30);
+                  border-radius:999px;
+                  background:rgba(249,115,22,0.07);
+                  color:#ea580c;
+                  font-size:10px;
+                  font-weight:600;
+                  letter-spacing:0.09em;
+                  text-transform:uppercase;
+                  margin-bottom:10px;
+                ">STS Form Submitted</div>
+                <h1 style="
+                  margin:0 0 5px;
+                  font-size:24px;
+                  font-weight:700;
+                  color:#0d1117;
+                  letter-spacing:-0.035em;
+                  line-height:1.2;
+                ">Next forms are required</h1>
+                <p style="
+                  margin:0;
+                  font-size:13px;
+                  color:#6b7280;
+                  line-height:1.55;
+                ">
+                  The STS form has been submitted for ${escapeHtml(recipientName)}. Please fill in the Specific RM study form and the Product inventory validation form.
+                </p>
+              </td>
+            </tr>
+
+            <tr>
+              <td>
+                ${sectionCard({
+                  icon: 'S',
+                  title: 'Small Serial Request',
+                  subtitle: 'Initial request information',
+                  rows: `
+                    ${twoColumnRow('Product Reference', ssr.productReference, 'Reference Designation', ssr.referenceDesignation)}
+                    ${twoColumnRow('Customer Name', ssr.customerName || '-', 'KAM', getKamName(ssr))}
+                    ${twoColumnRow('Plant', ssr.plant, 'Quantity Requested', ssr.quantityRequested)}
+                    ${twoColumnRow('Product Family', ssr.productFamily, 'Date Requested', formatDate(ssr.dateRequested))}
+                    ${fullWidthRow('KAM Note', ssr.kamNote || '-')}
+                  `,
+                })}
+
+                ${sectionCard({
+                  icon: '4',
+                  title: '4M Validation',
+                  subtitle: 'Current 4M validation status',
+                  rows: fourMValidation ? `
+                    ${twoColumnRow('Production Capacity / Week', fourMValidation.productionCapacityPerWeek, 'Document', fourMValidation.documentName || '-')}
+                    ${twoColumnRow('Machine', formatBooleanStatus(fourMValidation.machineOk), 'Method', formatBooleanStatus(fourMValidation.methodOk))}
+                    ${twoColumnRow('Labor', formatBooleanStatus(fourMValidation.laborOk), 'Environment', formatBooleanStatus(fourMValidation.environmentOk))}
+                    ${twoColumnRow('Machine Due Date', formatDate(fourMValidation.machineDueDate), 'Method Due Date', formatDate(fourMValidation.methodDueDate))}
+                    ${twoColumnRow('Labor Due Date', formatDate(fourMValidation.laborDueDate), 'Environment Due Date', formatDate(fourMValidation.environmentDueDate))}
+                    ${fullWidthRow('Machine Explanation', fourMValidation.machineExplanation || '-')}
+                    ${fullWidthRow('Method Explanation', fourMValidation.methodExplanation || '-')}
+                    ${fullWidthRow('Labor Explanation', fourMValidation.laborExplanation || '-')}
+                    ${fullWidthRow('Environment Explanation', fourMValidation.environmentExplanation || '-')}
+                  ` : `
+                    ${fullWidthRow('4M Validation', 'No 4M validation found for this SSR')}
+                  `,
+                })}
+
+                ${sectionCard({
+                  icon: 'T',
+                  title: 'STS Form',
+                  subtitle: 'Commercial and raw material information',
+                  rows: `
+                    ${twoColumnRow('Status 1', stsForm?.status1 || '-', 'Product Current Stock', stsForm?.productCurrentStock || '-')}
+                    ${twoColumnRow('Last Selling Price', stsForm?.lastSellingPrice || '-', 'Last Selling Date', formatDate(stsForm?.lastSellingDate))}
+                    ${formatRawMaterialsForEmail(stsForm?.rawMaterials || [])}
+                  `,
+                  fullWidth: true,
+                })}
+
+                ${sectionCard({
+                  icon: '!',
+                  title: 'Action Required',
+                  subtitle: 'Pending forms to complete',
+                  rows: `
+                    ${fullWidthRow('Required forms', 'Specific RM study form and Product inventory validation form')}
+                  `,
+                  fullWidth: true,
+                })}
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
+`
+
+const sendStsFormSubmittedEmailToFadwa = async ({ ssr, fourMValidation, stsForm }) => {
+  const recipient = getRecipientByKey('fadwa')
+
+  if (!recipient?.email) {
+    console.warn('Fadwa email recipient is not configured in .env')
+    return
+  }
+
+  await transporter.sendMail({
+    from: process.env.SMTP_FROM || process.env.SMTP_USER,
+    to: recipient.email,
+    subject: buildStsCompletionSubject(ssr),
+    html: buildStsCompletionHtml({
+      recipientName: recipient.name,
+      ssr,
+      fourMValidation,
+      stsForm,
+    }),
+  })
+}
+
 module.exports = {
-  sendSSREmail1,
-  sendSSREmail2,
-  generateSSRToken,
-  verifySSRToken,
-};
+  sendNewSmallSerialRequestEmails,
+  sendStsFormSubmittedEmailToFadwa,
+  generateFourMAccessToken,
+  generateStsAccessToken,
+  verifyFourMAccessToken,
+  verifyStsAccessToken,
+}

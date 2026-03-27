@@ -1,17 +1,22 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
+const path = require("path");
 const sequelize = require("./config/sequelize");
+const syncStsFormSchema = require("./config/syncStsFormSchema");
 const ssrRoutes = require("./routes/ssr.route");
+const fourMValidationRoutes = require("./routes/fourMValidation.route");
+const stsFormRoutes = require("./routes/stsForm.route");
 const userRoutes = require("./routes/userRoutes");
 const salesRoutes = require('./routes/salesRoutes');
-require('./models/associations');
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 app.use("/api/users", userRoutes);
+app.use("/upload", express.static(path.join(__dirname, "upload")));
+app.use("/api/upload", express.static(path.join(__dirname, "upload")));
 
 app.get("/", (req, res) => {
   res.send("API is running 🚀");
@@ -22,6 +27,11 @@ app.get("/api/data", (req, res) => {
 });
 
 app.use("/api/ssr", ssrRoutes);
+app.use("/api/4m-validations", fourMValidationRoutes);
+app.use("/api/sts-forms", stsFormRoutes);
+app.use("/api/sts-form", stsFormRoutes);
+app.use("/api/sts", stsFormRoutes);
+app.use("/api/sts-validations", stsFormRoutes);
 app.use('/api/sales-reps', salesRoutes);
 
 const PORT = process.env.PORT || 3000;
@@ -31,6 +41,7 @@ async function startServer() {
     await sequelize.authenticate();
     console.log("PostgreSQL connected successfully");
 
+    await syncStsFormSchema();
     await sequelize.sync();
     console.log("Models synchronized successfully");
 

@@ -1,4 +1,5 @@
 const service = require('../services/ssr.service')
+const { verifyStsAccessToken } = require('../emailService/ssr.mailer')
 
 const createSmallSerialRequest = async (req, res) => {
   try {
@@ -7,7 +8,7 @@ const createSmallSerialRequest = async (req, res) => {
       referenceDesignation,
       productFamily,
       customerName,
-      kam,
+      kam_id,
       plant,
       quantityRequested,
       dateRequested,
@@ -18,7 +19,7 @@ const createSmallSerialRequest = async (req, res) => {
     if (!productReference)     missing.push('productReference')
     if (!referenceDesignation) missing.push('referenceDesignation')
     if (!productFamily)        missing.push('productFamily')
-    if (!kam)                  missing.push('kam')
+    if (!kam_id)               missing.push('kam_id')
     if (!plant)                missing.push('plant')
     if (!quantityRequested)    missing.push('quantityRequested')
 
@@ -37,7 +38,7 @@ const createSmallSerialRequest = async (req, res) => {
       referenceDesignation,
       productFamily,
       customerName:      customerName    || null,
-      kam,
+      kam_id,
       plant,
       quantityRequested: Number(quantityRequested),
       dateRequested:     dateRequested   || null,
@@ -54,6 +55,7 @@ const createSmallSerialRequest = async (req, res) => {
 const getAllSmallSerialRequests = async (req, res) => {
   try {
     const data = await service.getAllSmallSerialRequests()
+    console.log('getAllSmallSerialRequests data:', data)
     return res.status(200).json(data)
   } catch (error) {
     console.error('getAllSmallSerialRequests error:', error)
@@ -94,10 +96,28 @@ const deleteSmallSerialRequest = async (req, res) => {
   }
 }
 
+const getSmallSerialRequestForStsByToken = async (req, res) => {
+  try {
+    const payload = verifyStsAccessToken(req.params.token)
+
+    if (payload.purpose !== 'sts_form_access') {
+      return res.status(400).json({ message: 'Invalid access token' })
+    }
+
+    const data = await service.getSmallSerialRequestById(payload.ssrId)
+    return res.status(200).json(data)
+  } catch (error) {
+    console.error('getSmallSerialRequestForStsByToken error:', error)
+    const status = error.message === 'SmallSerialRequest not found' ? 404 : 401
+    return res.status(status).json({ message: error.message || 'Invalid or expired access token' })
+  }
+}
+
 module.exports = {
   createSmallSerialRequest,
   getAllSmallSerialRequests,
   getSmallSerialRequestById,
+  getSmallSerialRequestForStsByToken,
   updateSmallSerialRequest,
   deleteSmallSerialRequest,
 }

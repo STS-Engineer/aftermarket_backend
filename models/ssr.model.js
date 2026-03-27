@@ -1,6 +1,8 @@
 // models/SmallSerialRequest.js
 const { DataTypes } = require("sequelize");
 const sequelize     = require("../config/sequelize");
+const FourMValidation = require("./fourMValidation.model");
+const STSForm = require("./stsForm.model");
 
 const SmallSerialRequest = sequelize.define(
   "SmallSerialRequest",
@@ -25,15 +27,10 @@ const SmallSerialRequest = sequelize.define(
       allowNull: true,
       field:     "customer_name",
     },
-    // ── KAM → clé étrangère vers SalesRep ────────────────
     kamId: {
       type:       DataTypes.INTEGER,
       allowNull:  false,
       field:      "kam_id",
-      references: {
-        model: "sales_reps",
-        key:   "id",
-      },
     },
     plant: {
       type: DataTypes.ENUM(
@@ -72,5 +69,15 @@ const SmallSerialRequest = sequelize.define(
     underscored: true,
   }
 );
+
+SmallSerialRequest.hasOne(FourMValidation, {
+  foreignKey: "ssrId",
+  as: "fourMValidation",
+});
+
+SmallSerialRequest.hasOne(STSForm, {
+  foreignKey: "ssrId",
+  as: "stsForm",
+});
 
 module.exports = SmallSerialRequest;

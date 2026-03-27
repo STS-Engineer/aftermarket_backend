@@ -6,6 +6,8 @@ router.post('/',      ctrl.createSmallSerialRequest)
 
 router.get('/',       ctrl.getAllSmallSerialRequests)
 
+router.get('/access/:token', ctrl.getSmallSerialRequestForStsByToken)
+
 router.get('/:id',    ctrl.getSmallSerialRequestById)
 
 router.put('/:id',    ctrl.updateSmallSerialRequest)

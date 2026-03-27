@@ -12,6 +12,25 @@ const getAllSalesReps = async () => {
   }
 };
 
+const getSalesRepById = async (id) => {
+  try {
+    const salesRep = await SalesRep.findByPk(id);
+
+    if (!salesRep) {
+      throw new Error('Sales rep not found');
+    }
+
+    return salesRep;
+  } catch (error) {
+    if (error.message === 'Sales rep not found') {
+      throw error;
+    }
+
+    throw new Error(`Error fetching sales rep: ${error.message}`);
+  }
+};
+
 module.exports = {
   getAllSalesReps,
+  getSalesRepById,
 };
