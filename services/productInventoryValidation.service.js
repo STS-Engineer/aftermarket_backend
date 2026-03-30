@@ -96,33 +96,48 @@ const saveProductInventoryValidation = async (data, file) => {
 
   const documentPayload = buildDocumentPayload(file)
 
+  let savedValidation = null
+
   if (existingValidation) {
     await existingValidation.update({
       ...payload,
       ...(documentPayload || {}),
     })
 
-    return formatProductInventoryValidationForFrontend(existingValidation)
-  }
+    savedValidation = existingValidation
+  } else {
+    if (!documentPayload) {
+      throw new Error('approval document is required')
+    }
 
-  if (!documentPayload) {
-    throw new Error('approval document is required')
+    try {
+      savedValidation = await ProductInventoryValidation.create({
+        ...payload,
+        ...documentPayload,
+      })
+    } catch (error) {
+      if (file?.path && fs.existsSync(file.path)) {
+        fs.unlinkSync(file.path)
+      }
+
+      throw error
+    }
   }
 
   try {
-    const validation = await ProductInventoryValidation.create({
-      ...payload,
-      ...documentPayload,
+    const refreshedSsr = await ssrService.getSmallSerialRequestById(data.ssrId)
+    const { sendSubmissionSummaryEmails } = require('../emailService/ssrSummary.mailer')
+
+    await sendSubmissionSummaryEmails({
+      ssr: refreshedSsr,
+      submittedFormKey: 'product-inventory-validation',
+      submittedFormLabel: 'Product Inventory Validation Form',
     })
-
-    return formatProductInventoryValidationForFrontend(validation)
   } catch (error) {
-    if (file?.path && fs.existsSync(file.path)) {
-      fs.unlinkSync(file.path)
-    }
-
-    throw error
+    console.error('sendSubmissionSummaryEmails for Product Inventory error:', error.message)
   }
+
+  return formatProductInventoryValidationForFrontend(savedValidation)
 }
 
 const getProductInventoryValidationBySsrId = async (ssrId) => {

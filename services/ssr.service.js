@@ -128,7 +128,7 @@ const createSmallSerialRequest = async (data) => {
     const { sendNewSmallSerialRequestEmails } = require('../emailService/ssr.mailer')
     await sendNewSmallSerialRequestEmails({ ssr: formattedRequest })
   } catch (error) {
-    console.error('sendNewSmallSerialRequestEmails error:', error.message)
+    console.error('sendNewSmallSerialRequestEmails error:', error)
   }
 
   return formattedRequest

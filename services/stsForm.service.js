@@ -111,6 +111,25 @@ const saveStsForm = async (data) => {
   return formatStsFormForFrontend(form)
 }
 
+const saveSpecificRMStudyForm = async (data) => {
+  const result = await saveStsForm(data)
+
+  try {
+    const ssr = await ssrService.getSmallSerialRequestById(data.ssrId)
+    const { sendSubmissionSummaryEmails } = require('../emailService/ssrSummary.mailer')
+
+    await sendSubmissionSummaryEmails({
+      ssr,
+      submittedFormKey: 'specific-rm-study',
+      submittedFormLabel: 'Specific RM Study Form',
+    })
+  } catch (error) {
+    console.error('sendSubmissionSummaryEmails for Specific RM Study error:', error.message)
+  }
+
+  return result
+}
+
 const getStsFormBySsrId = async (ssrId) => {
   const ssr = await ssrService.getSmallSerialRequestById(ssrId)
   const form = await STSForm.findOne({
@@ -132,8 +151,14 @@ const getStsAccessDataBySsrId = async (ssrId) => {
   return mergeSsrWithStsForm(ssr, formattedForm)
 }
 
+const getSpecificRMStudyAccessDataBySsrId = async (ssrId) => {
+  return await getStsAccessDataBySsrId(ssrId)
+}
+
 module.exports = {
   saveStsForm,
+  saveSpecificRMStudyForm,
   getStsFormBySsrId,
   getStsAccessDataBySsrId,
+  getSpecificRMStudyAccessDataBySsrId,
 }

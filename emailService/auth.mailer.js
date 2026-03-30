@@ -1,17 +1,5 @@
-const nodemailer = require('nodemailer')
 const jwt = require('jsonwebtoken')
-
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: parseInt(process.env.SMTP_PORT || '587', 10),
-  secure: process.env.SMTP_SECURE === 'true',
-  requireTLS: process.env.SMTP_SECURE !== 'true',
-  auth: process.env.SMTP_USER ? {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  } : undefined,
-  tls: { rejectUnauthorized: false },
-})
+const { transporter } = require('./mailTransport')
 
 const generatePasswordResetToken = ({ memberId, email }) => jwt.sign(
   { memberId, email, purpose: 'password_reset' },

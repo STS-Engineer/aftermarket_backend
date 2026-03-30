@@ -53,33 +53,48 @@ const saveRMAvailabilityValidation = async (data, file) => {
 
   const documentPayload = buildDocumentPayload(file)
 
+  let savedValidation = null
+
   if (existingValidation) {
     if (!documentPayload) {
-      return formatRMAvailabilityValidationForFrontend(existingValidation)
+      savedValidation = existingValidation
+    } else {
+      await existingValidation.update(documentPayload)
+      savedValidation = existingValidation
+    }
+  } else {
+    if (!documentPayload) {
+      throw new Error('approval document is required')
     }
 
-    await existingValidation.update(documentPayload)
-    return formatRMAvailabilityValidationForFrontend(existingValidation)
-  }
+    try {
+      savedValidation = await RMAvailabilityValidation.create({
+        ssrId: data.ssrId,
+        ...documentPayload,
+      })
+    } catch (error) {
+      if (file?.path && fs.existsSync(file.path)) {
+        fs.unlinkSync(file.path)
+      }
 
-  if (!documentPayload) {
-    throw new Error('approval document is required')
+      throw error
+    }
   }
 
   try {
-    const validation = await RMAvailabilityValidation.create({
-      ssrId: data.ssrId,
-      ...documentPayload,
+    const refreshedSsr = await ssrService.getSmallSerialRequestById(data.ssrId)
+    const { sendSubmissionSummaryEmails } = require('../emailService/ssrSummary.mailer')
+
+    await sendSubmissionSummaryEmails({
+      ssr: refreshedSsr,
+      submittedFormKey: 'rm-availability-validation',
+      submittedFormLabel: 'RM Availability Validation Form',
     })
-
-    return formatRMAvailabilityValidationForFrontend(validation)
   } catch (error) {
-    if (file?.path && fs.existsSync(file.path)) {
-      fs.unlinkSync(file.path)
-    }
-
-    throw error
+    console.error('sendSubmissionSummaryEmails for RM Availability error:', error.message)
   }
+
+  return formatRMAvailabilityValidationForFrontend(savedValidation)
 }
 
 const getRMAvailabilityValidationBySsrId = async (ssrId) => {

@@ -18,6 +18,23 @@ const recentEmailKeys = new Map()
 
 const normalizeEmail = (value) => String(value || '').trim().toLowerCase()
 
+const getInitialWorkflowRecipients = () => {
+  const fadwaEmail = normalizeEmail(process.env.FADWA_EMAIL)
+  const stsRecipientEmails = [process.env.HAMDI_EMAIL, process.env.AZIZA_EMAIL]
+    .map(normalizeEmail)
+    .filter(Boolean)
+    .filter((email, index, array) => array.indexOf(email) === index)
+
+  return {
+    fourMRecipient: fadwaEmail ? {
+      key: 'fadwa',
+      name: process.env.FADWA_NAME || 'Fadwa',
+      email: fadwaEmail,
+    } : null,
+    stsRecipients: stsRecipientEmails,
+  }
+}
+
 const getRecipients = () => {
   const seenEmails = new Set()
 
@@ -518,49 +535,65 @@ const getRecipientAction = ({ recipientKey, ssrId, frontendBaseUrl }) => {
     }
   }
 
-  if (recipientKey === 'hamdi' || recipientKey === 'aziza') {
-    const token = generateStsAccessToken(ssrId)
-
-    return {
-      title: 'Next Step',
-      description: 'Open the STS form for this request. The request information will already be loaded.',
-      actionUrl: `${frontendBaseUrl}/sts-form/${token}`,
-      buttonLabel: 'Open STS Form',
-    }
-  }
-
   return null
 }
 
 const sendNewSmallSerialRequestEmails = async ({ ssr }) => {
-  const recipients = getRecipients()
+  const frontendBaseUrl = process.env.FRONTEND_URL || 'http://localhost:5173'
+  const { fourMRecipient, stsRecipients } = getInitialWorkflowRecipients()
 
-  if (recipients.length === 0) {
-    console.warn('No SSR email recipients configured in .env')
+  if (!fourMRecipient && stsRecipients.length === 0) {
+    console.warn('No SSR initial workflow email recipients configured in .env')
     return
   }
 
-  for (const recipient of recipients) {
-    const frontendBaseUrl = process.env.FRONTEND_URL || 'http://localhost:5173'
+  if (fourMRecipient) {
     const action = getRecipientAction({
-      recipientKey: recipient.key,
+      recipientKey: fourMRecipient.key,
       ssrId: ssr.id,
       frontendBaseUrl,
     })
 
     await sendMailOnce({
-      dedupeKey: ['new-ssr', normalizeEmail(recipient.email), ssr.id, action?.actionUrl || ''].join('|'),
+      dedupeKey: ['new-ssr', normalizeEmail(fourMRecipient.email), ssr.id, action?.actionUrl || ''].join('|'),
       mailOptions: {
         from: process.env.SMTP_FROM || process.env.SMTP_USER,
-        to: recipient.email,
+        to: fourMRecipient.email,
         subject: buildSubject(ssr),
         html: buildHtml({
-          recipientName: recipient.name,
+          recipientName: fourMRecipient.name,
           ssr,
           action,
         }),
       },
     })
+  } else {
+    console.warn('Fadwa email recipient is not configured in .env')
+  }
+
+  if (stsRecipients.length > 0) {
+    const action = {
+      title: 'Next Step',
+      description: 'Open the STS form for this request. The request information will already be loaded.',
+      actionUrl: `${frontendBaseUrl}/sts-form/${generateStsAccessToken(ssr.id)}`,
+      buttonLabel: 'Open STS Form',
+    }
+
+    await sendMailOnce({
+      dedupeKey: ['new-ssr', stsRecipients.join(','), ssr.id, action.actionUrl].join('|'),
+      mailOptions: {
+        from: process.env.SMTP_FROM || process.env.SMTP_USER,
+        to: stsRecipients.join(','),
+        subject: buildSubject(ssr),
+        html: buildHtml({
+          recipientName: [process.env.HAMDI_NAME || 'Hamdi', process.env.AZIZA_NAME || 'Aziza'].join(' & '),
+          ssr,
+          action,
+        }),
+      },
+    })
+  } else {
+    console.warn('Hamdi/Aziza email recipients are not configured in .env')
   }
 }
 
@@ -718,10 +751,3 @@ module.exports = {
   verifyFourMAccessToken,
   verifyStsAccessToken,
 }
-
-
-
-
-
-
-
