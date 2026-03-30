@@ -1,7 +1,10 @@
 const SmallSerialRequest = require('../models/ssr.model')
 const FourMValidation = require('../models/fourMValidation.model')
 const STSForm = require('../models/stsForm.model')
+const ProductInventoryValidation = require('../models/productInventoryValidation.model')
+const RMAvailabilityValidation = require('../models/rmAvailabilityValidation.model')
 const { getSalesRepById } = require('./salesService')
+const path = require('path')
 
 const mapPayloadToModel = (data) => {
   const payload = { ...data }
@@ -12,19 +15,6 @@ const mapPayloadToModel = (data) => {
   }
 
   return payload
-}
-
-const formatRequestForFrontend = (request, kam = null) => {
-  const plainRequest = request.get({ plain: true })
-  const { kamId, fourMValidation, stsForm, ...rest } = plainRequest
-
-  return {
-    ...rest,
-    kam_id: kamId,
-    kam,
-    fourMValidation: formatFourMValidationForFrontend(fourMValidation),
-    stsForm: formatStsFormForFrontend(stsForm),
-  }
 }
 
 const formatFourMValidationForFrontend = (validation) => {
@@ -52,6 +42,60 @@ const formatStsFormForFrontend = (form) => {
   return form
 }
 
+const formatProductInventoryValidationForFrontend = (validation) => {
+  if (!validation) return null
+
+  const { approvalDocumentData, ...rest } = validation
+  let approvalDocumentPath = null
+
+  if (approvalDocumentData) {
+    approvalDocumentPath = Buffer.isBuffer(approvalDocumentData)
+      ? approvalDocumentData.toString('utf8')
+      : String(approvalDocumentData)
+  }
+
+  return {
+    ...rest,
+    approvalDocumentPath,
+    hasApprovalDocument: !!approvalDocumentPath,
+  }
+}
+
+const formatRMAvailabilityValidationForFrontend = (validation) => {
+  if (!validation) return null
+
+  const { approvalDocumentData, ...rest } = validation
+  let approvalDocumentPath = null
+
+  if (approvalDocumentData) {
+    approvalDocumentPath = Buffer.isBuffer(approvalDocumentData)
+      ? approvalDocumentData.toString('utf8')
+      : String(approvalDocumentData)
+  }
+
+  return {
+    ...rest,
+    approvalDocumentPath,
+    approvalDocumentName: rest.approvalDocumentName || (approvalDocumentPath ? path.basename(approvalDocumentPath) : null),
+    hasApprovalDocument: !!approvalDocumentPath,
+  }
+}
+
+const formatRequestForFrontend = (request, kam = null) => {
+  const plainRequest = request.get({ plain: true })
+  const { kamId, fourMValidation, stsForm, productInventoryValidation, rmAvailabilityValidation, ...rest } = plainRequest
+
+  return {
+    ...rest,
+    kam_id: kamId,
+    kam,
+    fourMValidation: formatFourMValidationForFrontend(fourMValidation),
+    stsForm: formatStsFormForFrontend(stsForm),
+    productInventoryValidation: formatProductInventoryValidationForFrontend(productInventoryValidation),
+    rmAvailabilityValidation: formatRMAvailabilityValidationForFrontend(rmAvailabilityValidation),
+  }
+}
+
 const attachKamToRequest = async (request) => {
   let kam = null
 
@@ -66,13 +110,17 @@ const attachKamToRequest = async (request) => {
   return formatRequestForFrontend(request, kam)
 }
 
+const getIncludes = () => ([
+  { model: FourMValidation, as: 'fourMValidation', required: false },
+  { model: STSForm, as: 'stsForm', required: false },
+  { model: ProductInventoryValidation, as: 'productInventoryValidation', required: false },
+  { model: RMAvailabilityValidation, as: 'rmAvailabilityValidation', required: false },
+])
+
 const createSmallSerialRequest = async (data) => {
   const request = await SmallSerialRequest.create(mapPayloadToModel(data))
   const requestWithRelations = await SmallSerialRequest.findByPk(request.id, {
-    include: [
-      { model: FourMValidation, as: 'fourMValidation', required: false },
-      { model: STSForm, as: 'stsForm', required: false },
-    ],
+    include: getIncludes(),
   })
   const formattedRequest = await attachKamToRequest(requestWithRelations)
 
@@ -88,11 +136,8 @@ const createSmallSerialRequest = async (data) => {
 
 const getAllSmallSerialRequests = async () => {
   const requests = await SmallSerialRequest.findAll({
-    include: [
-      { model: FourMValidation, as: 'fourMValidation', required: false },
-      { model: STSForm, as: 'stsForm', required: false },
-    ],
-    order: [['createdAt', 'DESC']]
+    include: getIncludes(),
+    order: [['createdAt', 'DESC']],
   })
 
   return await Promise.all(requests.map(attachKamToRequest))
@@ -100,10 +145,7 @@ const getAllSmallSerialRequests = async () => {
 
 const getSmallSerialRequestById = async (id) => {
   const request = await SmallSerialRequest.findByPk(id, {
-    include: [
-      { model: FourMValidation, as: 'fourMValidation', required: false },
-      { model: STSForm, as: 'stsForm', required: false },
-    ],
+    include: getIncludes(),
   })
   if (!request) throw new Error('SmallSerialRequest not found')
   return await attachKamToRequest(request)
@@ -115,10 +157,7 @@ const updateSmallSerialRequest = async (id, data) => {
   await request.update(mapPayloadToModel(data))
 
   const updatedRequest = await SmallSerialRequest.findByPk(id, {
-    include: [
-      { model: FourMValidation, as: 'fourMValidation', required: false },
-      { model: STSForm, as: 'stsForm', required: false },
-    ],
+    include: getIncludes(),
   })
 
   return await attachKamToRequest(updatedRequest)

@@ -1,36 +1,38 @@
 // models/SmallSerialRequest.js
 const { DataTypes } = require("sequelize");
-const sequelize     = require("../config/sequelize");
+const sequelize = require("../config/sequelize");
 const FourMValidation = require("./fourMValidation.model");
 const STSForm = require("./stsForm.model");
+const ProductInventoryValidation = require("./productInventoryValidation.model");
+const RMAvailabilityValidation = require('./rmAvailabilityValidation.model');
 
 const SmallSerialRequest = sequelize.define(
   "SmallSerialRequest",
   {
     productReference: {
-      type:      DataTypes.STRING,
+      type: DataTypes.STRING,
       allowNull: false,
-      field:     "product_reference",
+      field: "product_reference",
     },
     referenceDesignation: {
-      type:      DataTypes.TEXT,
+      type: DataTypes.TEXT,
       allowNull: false,
-      field:     "reference_designation",
+      field: "reference_designation",
     },
     productFamily: {
-      type:      DataTypes.STRING,
+      type: DataTypes.STRING,
       allowNull: false,
-      field:     "product_family",
+      field: "product_family",
     },
     customerName: {
-      type:      DataTypes.STRING,
+      type: DataTypes.STRING,
       allowNull: true,
-      field:     "customer_name",
+      field: "customer_name",
     },
     kamId: {
-      type:       DataTypes.INTEGER,
-      allowNull:  false,
-      field:      "kam_id",
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      field: "kam_id",
     },
     plant: {
       type: DataTypes.ENUM(
@@ -45,27 +47,27 @@ const SmallSerialRequest = sequelize.define(
         'Frankfurt Plant'
       ),
       allowNull: false,
-      field:     "plant",
+      field: "plant",
     },
     quantityRequested: {
-      type:      DataTypes.INTEGER,
+      type: DataTypes.INTEGER,
       allowNull: false,
-      field:     "quantity_requested",
-      validate:  { min: 1 },
+      field: "quantity_requested",
+      validate: { min: 1 },
     },
     dateRequested: {
-      type:      DataTypes.DATE,
+      type: DataTypes.DATE,
       allowNull: true,
-      field:     "date_requested",
+      field: "date_requested",
     },
     kamNote: {
-      type:      DataTypes.TEXT,
+      type: DataTypes.TEXT,
       allowNull: true,
-      field:     "kam_note",
+      field: "kam_note",
     },
   },
   {
-    tableName:   "small_serial_requests",
+    tableName: "small_serial_requests",
     underscored: true,
   }
 );
@@ -78,6 +80,16 @@ SmallSerialRequest.hasOne(FourMValidation, {
 SmallSerialRequest.hasOne(STSForm, {
   foreignKey: "ssrId",
   as: "stsForm",
+});
+
+SmallSerialRequest.hasOne(ProductInventoryValidation, {
+  foreignKey: "ssrId",
+  as: "productInventoryValidation",
+});
+
+SmallSerialRequest.hasOne(RMAvailabilityValidation, {
+  foreignKey: "ssrId",
+  as: "rmAvailabilityValidation",
 });
 
 module.exports = SmallSerialRequest;

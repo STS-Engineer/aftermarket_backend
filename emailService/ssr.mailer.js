@@ -13,13 +13,54 @@ const transporter = nodemailer.createTransport({
   tls: { rejectUnauthorized: false },
 })
 
-const getRecipients = () => (
-  [
+const RECENT_EMAIL_WINDOW_MS = 5 * 60 * 1000
+const recentEmailKeys = new Map()
+
+const normalizeEmail = (value) => String(value || '').trim().toLowerCase()
+
+const getRecipients = () => {
+  const seenEmails = new Set()
+
+  return [
     { key: 'fadwa', name: process.env.FADWA_NAME || 'Fadwa', email: process.env.FADWA_EMAIL },
     { key: 'hamdi', name: process.env.HAMDI_NAME || 'Hamdi', email: process.env.HAMDI_EMAIL },
     { key: 'aziza', name: process.env.AZIZA_NAME || 'Aziza', email: process.env.AZIZA_EMAIL },
-  ].filter((recipient) => recipient.email)
-)
+  ].filter((recipient) => {
+    const normalizedEmail = normalizeEmail(recipient.email)
+    if (!normalizedEmail || seenEmails.has(normalizedEmail)) return false
+    seenEmails.add(normalizedEmail)
+    return true
+  })
+}
+
+const sendMailOnce = async ({ dedupeKey, mailOptions, windowMs = RECENT_EMAIL_WINDOW_MS }) => {
+  const now = Date.now()
+
+  for (const [key, timestamp] of recentEmailKeys.entries()) {
+    if (now - timestamp > windowMs) {
+      recentEmailKeys.delete(key)
+    }
+  }
+
+  if (dedupeKey && recentEmailKeys.has(dedupeKey)) {
+    console.warn(`Skipping duplicate email send for key: ${dedupeKey}`)
+    return null
+  }
+
+  if (dedupeKey) {
+    recentEmailKeys.set(dedupeKey, now)
+  }
+
+  try {
+    return await transporter.sendMail(mailOptions)
+  } catch (error) {
+    if (dedupeKey) {
+      recentEmailKeys.delete(dedupeKey)
+    }
+
+    throw error
+  }
+}
 
 const getRecipientByKey = (key) => getRecipients().find((recipient) => recipient.key === key) || null
 
@@ -507,20 +548,23 @@ const sendNewSmallSerialRequestEmails = async ({ ssr }) => {
       frontendBaseUrl,
     })
 
-    await transporter.sendMail({
-      from: process.env.SMTP_FROM || process.env.SMTP_USER,
-      to: recipient.email,
-      subject: buildSubject(ssr),
-      html: buildHtml({
-        recipientName: recipient.name,
-        ssr,
-        action,
-      }),
+    await sendMailOnce({
+      dedupeKey: ['new-ssr', normalizeEmail(recipient.email), ssr.id, action?.actionUrl || ''].join('|'),
+      mailOptions: {
+        from: process.env.SMTP_FROM || process.env.SMTP_USER,
+        to: recipient.email,
+        subject: buildSubject(ssr),
+        html: buildHtml({
+          recipientName: recipient.name,
+          ssr,
+          action,
+        }),
+      },
     })
   }
 }
 
-const buildStsCompletionHtml = ({ recipientName, ssr, fourMValidation, stsForm }) => `
+const buildStsCompletionHtml = ({ recipientName, ssr, fourMValidation, stsForm, actionUrl }) => `
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -555,20 +599,27 @@ const buildStsCompletionHtml = ({ recipientName, ssr, fourMValidation, stsForm }
                   color:#0d1117;
                   letter-spacing:-0.035em;
                   line-height:1.2;
-                ">Next forms are required</h1>
+                ">Next form is required</h1>
                 <p style="
                   margin:0;
                   font-size:13px;
                   color:#6b7280;
                   line-height:1.55;
                 ">
-                  The STS form has been submitted for ${escapeHtml(recipientName)}. Please fill in the Specific RM study form and the Product inventory validation form.
+                  The STS form has been submitted for ${escapeHtml(recipientName)}. Please fill in the Product inventory validation form.
                 </p>
               </td>
             </tr>
 
             <tr>
               <td>
+                ${actionUrl ? buildActionCard({
+                  title: 'Next Step',
+                  description: 'Open the Product inventory validation form for this request. The request information will already be loaded.',
+                  actionUrl,
+                  buttonLabel: 'Open Product Inventory Validation Form',
+                }) : ''}
+
                 ${sectionCard({
                   icon: 'S',
                   title: 'Small Serial Request',
@@ -618,7 +669,7 @@ const buildStsCompletionHtml = ({ recipientName, ssr, fourMValidation, stsForm }
                   title: 'Action Required',
                   subtitle: 'Pending forms to complete',
                   rows: `
-                    ${fullWidthRow('Required forms', 'Specific RM study form and Product inventory validation form')}
+                    ${fullWidthRow('Required form', 'Product inventory validation form')}
                   `,
                   fullWidth: true,
                 })}
@@ -634,22 +685,28 @@ const buildStsCompletionHtml = ({ recipientName, ssr, fourMValidation, stsForm }
 
 const sendStsFormSubmittedEmailToFadwa = async ({ ssr, fourMValidation, stsForm }) => {
   const recipient = getRecipientByKey('fadwa')
+  const frontendBaseUrl = process.env.FRONTEND_URL || 'http://localhost:5173'
+  const accessToken = generateStsAccessToken(ssr.id)
 
   if (!recipient?.email) {
     console.warn('Fadwa email recipient is not configured in .env')
     return
   }
 
-  await transporter.sendMail({
-    from: process.env.SMTP_FROM || process.env.SMTP_USER,
-    to: recipient.email,
-    subject: buildStsCompletionSubject(ssr),
-    html: buildStsCompletionHtml({
-      recipientName: recipient.name,
-      ssr,
-      fourMValidation,
-      stsForm,
-    }),
+  await sendMailOnce({
+    dedupeKey: ['sts-submitted', normalizeEmail(recipient.email), ssr.id, accessToken].join('|'),
+    mailOptions: {
+      from: process.env.SMTP_FROM || process.env.SMTP_USER,
+      to: recipient.email,
+      subject: buildStsCompletionSubject(ssr),
+      html: buildStsCompletionHtml({
+        recipientName: recipient.name,
+        ssr,
+        fourMValidation,
+        stsForm,
+        actionUrl: `${frontendBaseUrl}/product-inventory-validation/${accessToken}`,
+      }),
+    },
   })
 }
 
@@ -661,3 +718,10 @@ module.exports = {
   verifyFourMAccessToken,
   verifyStsAccessToken,
 }
+
+
+
+
+
+
+

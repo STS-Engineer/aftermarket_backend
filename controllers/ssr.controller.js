@@ -55,7 +55,6 @@ const createSmallSerialRequest = async (req, res) => {
 const getAllSmallSerialRequests = async (req, res) => {
   try {
     const data = await service.getAllSmallSerialRequests()
-    console.log('getAllSmallSerialRequests data:', data)
     return res.status(200).json(data)
   } catch (error) {
     console.error('getAllSmallSerialRequests error:', error)

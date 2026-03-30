@@ -7,6 +7,8 @@ const syncStsFormSchema = require("./config/syncStsFormSchema");
 const ssrRoutes = require("./routes/ssr.route");
 const fourMValidationRoutes = require("./routes/fourMValidation.route");
 const stsFormRoutes = require("./routes/stsForm.route");
+const productInventoryValidationRoutes = require("./routes/productInventoryValidation.route");
+const rmAvailabilityValidationRoutes = require('./routes/rmAvailabilityValidation.route');
 const userRoutes = require("./routes/userRoutes");
 const salesRoutes = require('./routes/salesRoutes');
 
@@ -32,6 +34,8 @@ app.use("/api/sts-forms", stsFormRoutes);
 app.use("/api/sts-form", stsFormRoutes);
 app.use("/api/sts", stsFormRoutes);
 app.use("/api/sts-validations", stsFormRoutes);
+app.use("/api/product-inventory-validations", productInventoryValidationRoutes);
+app.use('/api/rm-availability-validations', rmAvailabilityValidationRoutes);
 app.use('/api/sales-reps', salesRoutes);
 
 const PORT = process.env.PORT || 3000;
