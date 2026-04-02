@@ -3,7 +3,6 @@ const express = require("express");
 const cors = require("cors");
 const path = require("path");
 const sequelize = require("./config/sequelize");
-const syncStsFormSchema = require("./config/syncStsFormSchema");
 const ssrRoutes = require("./routes/ssr.route");
 const fourMValidationRoutes = require("./routes/fourMValidation.route");
 const stsFormRoutes = require("./routes/stsForm.route");
@@ -12,6 +11,7 @@ const productInventoryValidationRoutes = require("./routes/productInventoryValid
 const rmAvailabilityValidationRoutes = require('./routes/rmAvailabilityValidation.route');
 const userRoutes = require("./routes/userRoutes");
 const salesRoutes = require('./routes/salesRoutes');
+const rawMaterialMetricsRoutes = require('./routes/rawMaterialMetrics.route');
 
 const app = express();
 
@@ -40,6 +40,8 @@ app.use('/api/specific-rm-study-form', specificRMStudyRoutes);
 app.use("/api/product-inventory-validations", productInventoryValidationRoutes);
 app.use('/api/rm-availability-validations', rmAvailabilityValidationRoutes);
 app.use('/api/sales-reps', salesRoutes);
+app.use('/api/raw-material-metrics', rawMaterialMetricsRoutes);
+app.use('/api/raw-materials', rawMaterialMetricsRoutes);
 
 const PORT = process.env.PORT || 3000;
 
@@ -48,7 +50,7 @@ async function startServer() {
     await sequelize.authenticate();
     console.log("PostgreSQL connected successfully");
 
-    await syncStsFormSchema();
+    await sequelize.query('ALTER TABLE IF EXISTS raw_materials ADD COLUMN IF NOT EXISTS status BOOLEAN DEFAULT TRUE');
     await sequelize.sync();
     console.log("Models synchronized successfully");
 

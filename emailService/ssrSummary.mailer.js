@@ -1,4 +1,6 @@
 const { transporter } = require('./mailTransport')
+const { buildPricingCalculatorBuffer } = require('./pricingCalculatorWorkbook')
+const { getSalesRepDisplayName } = require('../utils/salesRep')
 
 const RECENT_EMAIL_WINDOW_MS = 5 * 60 * 1000
 const recentEmailKeys = new Map()
@@ -55,13 +57,6 @@ const escapeHtml = (value) => String(value ?? '')
   .replace(/"/g, '&quot;')
   .replace(/'/g, '&#39;')
 
-const escapeXml = (value) => String(value ?? '')
-  .replace(/&/g, '&amp;')
-  .replace(/</g, '&lt;')
-  .replace(/>/g, '&gt;')
-  .replace(/"/g, '&quot;')
-  .replace(/'/g, '&apos;')
-
 const escapePdfText = (value) => String(value ?? '')
   .normalize('NFKD')
   .replace(/[^\x20-\x7E]/g, '?')
@@ -85,10 +80,8 @@ const formatBooleanStatus = (value) => {
 }
 
 const getKamName = (ssr) => {
-  if (ssr?.kam && typeof ssr.kam === 'object') {
-    const fullName = [ssr.kam.first_name, ssr.kam.last_name].filter(Boolean).join(' ').trim()
-    if (fullName) return fullName
-  }
+  const fullName = getSalesRepDisplayName(ssr?.kam)
+  if (fullName) return fullName
 
   if (typeof ssr?.kam === 'string' && ssr.kam.trim()) {
     return ssr.kam.trim()
@@ -106,10 +99,17 @@ const getKamName = (ssr) => {
 }
 
 const getRawMaterials = (ssr) => {
-  if (Array.isArray(ssr?.stsForm?.rawMaterials)) return ssr.stsForm.rawMaterials
   if (Array.isArray(ssr?.rawMaterials)) return ssr.rawMaterials
+  if (Array.isArray(ssr?.stsForm?.rawMaterials)) return ssr.stsForm.rawMaterials
   return []
 }
+
+const isSummaryReady = (ssr) => Boolean(
+  ssr?.fourMValidation
+  && ssr?.stsForm
+  && ssr?.productInventoryValidation
+  && ssr?.rmAvailabilityValidation
+)
 
 const collectSummaryEntries = (ssr) => {
   const entries = [
@@ -149,7 +149,6 @@ const collectSummaryEntries = (ssr) => {
     { section: 'STS Form', field: 'Product Current Stock', value: sts?.productCurrentStock || '-' },
     { section: 'STS Form', field: 'Last Selling Price', value: sts?.lastSellingPrice || '-' },
     { section: 'STS Form', field: 'Last Selling Date', value: formatDate(sts?.lastSellingDate) },
-    { section: 'STS Form', field: 'Status 1', value: sts?.status1 || ssr?.status1 || '-' },
   )
 
   const productInventory = ssr?.productInventoryValidation
@@ -210,7 +209,7 @@ const buildPdfBuffer = (ssr, submittedFormLabel) => {
   } else {
     rawMaterials.forEach((row, index) => {
       lines.push(...wrapLine(
-        `${index + 1}. Part Reference: ${row.partReference || '-'} | Designation: ${row.referenceDesignation || '-'} | Quantity per Unit: ${row.quantityPerUnit || '-'} | RM Current Stock: ${row.rmCurrentStock || '-'} | Last Purchase Price: ${row.lastPurchasePrice || '-'}`,
+        `${index + 1}. Part Reference: ${row.partReference || '-'} | Designation: ${row.referenceDesignation || '-'} | Quantity per Unit: ${row.quantityPerUnit || '-'} | Total Requirement: ${row.totalRequirement || row.total_requirement || '-'} | RM Current Stock: ${row.rmCurrentStock || '-'} | RM Available for Prod: ${row.rmAvailableForProd || row.rm_available_for_prod || '-'} | Total Needs: ${row.totalNeeds || row.total_needs || '-'} | Need Study Case: ${typeof row.needStudyCase === 'boolean' ? (row.needStudyCase ? 'yes' : 'no') : (row.needStudyCase || row.need_study_case || '-')} | Last Purchase Price: ${row.lastPurchasePrice || '-'}`,
       ))
     })
   }
@@ -266,75 +265,6 @@ const buildPdfBuffer = (ssr, submittedFormLabel) => {
   return Buffer.from(pdf, 'utf8')
 }
 
-const buildExcelBuffer = (ssr, submittedFormLabel) => {
-  const entries = collectSummaryEntries(ssr)
-  const rawMaterials = getRawMaterials(ssr)
-
-  const summaryRows = entries.map((entry) => `
-      <Row>
-        <Cell><Data ss:Type="String">${escapeXml(entry.section)}</Data></Cell>
-        <Cell><Data ss:Type="String">${escapeXml(entry.field)}</Data></Cell>
-        <Cell><Data ss:Type="String">${escapeXml(entry.value)}</Data></Cell>
-      </Row>
-  `).join('')
-
-  const rawMaterialRows = rawMaterials.length > 0
-    ? rawMaterials.map((row, index) => `
-      <Row>
-        <Cell><Data ss:Type="Number">${index + 1}</Data></Cell>
-        <Cell><Data ss:Type="String">${escapeXml(row.partReference || '')}</Data></Cell>
-        <Cell><Data ss:Type="String">${escapeXml(row.referenceDesignation || '')}</Data></Cell>
-        <Cell><Data ss:Type="String">${escapeXml(row.quantityPerUnit || '')}</Data></Cell>
-        <Cell><Data ss:Type="String">${escapeXml(row.rmCurrentStock || '')}</Data></Cell>
-        <Cell><Data ss:Type="String">${escapeXml(row.lastPurchasePrice || '')}</Data></Cell>
-      </Row>
-    `).join('')
-    : `
-      <Row>
-        <Cell><Data ss:Type="String">No raw materials available</Data></Cell>
-      </Row>
-    `
-
-  const workbook = `<?xml version="1.0"?>
-<?mso-application progid="Excel.Sheet"?>
-<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
- xmlns:o="urn:schemas-microsoft-com:office:office"
- xmlns:x="urn:schemas-microsoft-com:office:excel"
- xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"
- xmlns:html="http://www.w3.org/TR/REC-html40">
-  <Worksheet ss:Name="SSR Summary">
-    <Table>
-      <Row>
-        <Cell><Data ss:Type="String">Section</Data></Cell>
-        <Cell><Data ss:Type="String">Field</Data></Cell>
-        <Cell><Data ss:Type="String">Value</Data></Cell>
-      </Row>
-      <Row>
-        <Cell><Data ss:Type="String">Submission</Data></Cell>
-        <Cell><Data ss:Type="String">Form</Data></Cell>
-        <Cell><Data ss:Type="String">${escapeXml(submittedFormLabel)}</Data></Cell>
-      </Row>
-      ${summaryRows}
-    </Table>
-  </Worksheet>
-  <Worksheet ss:Name="Raw Materials">
-    <Table>
-      <Row>
-        <Cell><Data ss:Type="String">#</Data></Cell>
-        <Cell><Data ss:Type="String">Part Reference</Data></Cell>
-        <Cell><Data ss:Type="String">Reference Designation</Data></Cell>
-        <Cell><Data ss:Type="String">Quantity per Unit</Data></Cell>
-        <Cell><Data ss:Type="String">RM Current Stock</Data></Cell>
-        <Cell><Data ss:Type="String">Last Purchase Price</Data></Cell>
-      </Row>
-      ${rawMaterialRows}
-    </Table>
-  </Worksheet>
-</Workbook>`
-
-  return Buffer.from(workbook, 'utf8')
-}
-
 const buildSafeReference = (value) => String(value || 'ssr')
   .trim()
   .replace(/[^a-z0-9-_]+/gi, '-')
@@ -351,8 +281,8 @@ const buildAttachments = (ssr, submittedFormKey, submittedFormLabel) => {
       contentType: 'application/pdf',
     },
     {
-      filename: `${reference}-${submittedFormKey}-summary.xls`,
-      content: buildExcelBuffer(ssr, submittedFormLabel),
+      filename: `${reference}-${submittedFormKey}-pricing-calculator.xls`,
+      content: buildPricingCalculatorBuffer(ssr, submittedFormLabel),
       contentType: 'application/vnd.ms-excel',
     },
   ]
@@ -366,12 +296,12 @@ const buildSummaryHtml = ({ recipientName, submittedFormLabel, ssr }) => `
       <tr>
         <td style="padding:24px;">
           <div style="font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#f97316;margin-bottom:8px;">Submission Summary</div>
-          <h1 style="margin:0 0 10px;font-size:24px;line-height:1.2;">${escapeHtml(submittedFormLabel)} submitted</h1>
+          <h1 style="margin:0 0 10px;font-size:24px;line-height:1.2;">Final SSR summary ready</h1>
           <p style="margin:0 0 18px;font-size:14px;line-height:1.6;color:#4b5563;">
-            Hello ${escapeHtml(recipientName)}, the form <strong>${escapeHtml(submittedFormLabel)}</strong> has been submitted for SSR <strong>${escapeHtml(ssr?.productReference || '-')}</strong>.
+            Hello ${escapeHtml(recipientName)}, the form <strong>${escapeHtml(submittedFormLabel)}</strong> has just been submitted and all required forms are now available for SSR <strong>${escapeHtml(ssr?.productReference || '-')}</strong>.
           </p>
           <p style="margin:0 0 18px;font-size:14px;line-height:1.6;color:#4b5563;">
-            The attached PDF and Excel files contain the complete SSR details, including 4M, STS, Product Inventory, RM Availability and raw material information.
+            The attached PDF and Excel files contain the complete SSR details, including 4M, STS, Product Inventory, RM Availability, raw material information and the pricing calculations.
           </p>
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
             <tr>
@@ -406,8 +336,13 @@ const sendSubmissionSummaryEmails = async ({ ssr, submittedFormKey, submittedFor
     return
   }
 
+  if (!isSummaryReady(ssr)) {
+    console.info(`Skipping final summary email for SSR ${ssr?.id || '-'} until all forms are completed.`)
+    return
+  }
+
   const attachments = buildAttachments(ssr, submittedFormKey, submittedFormLabel)
-  const subject = `[AVOCarbon] ${submittedFormLabel} Submitted - ${ssr?.productReference || `SSR ${ssr?.id || ''}`}`.trim()
+  const subject = `[AVOCarbon] Final SSR Summary - ${ssr?.productReference || `SSR ${ssr?.id || ''}`}`.trim()
 
   for (const recipient of recipients) {
     await sendMailOnce({

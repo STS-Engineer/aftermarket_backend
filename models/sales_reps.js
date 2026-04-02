@@ -1,5 +1,5 @@
 const { DataTypes } = require('sequelize');
-const sequelize = require('../config/SequelizeSales'); 
+const sequelize = require('../config/SequelizeSales');
 
 const SalesRep = sequelize.define('SalesRep', {
   id: {
@@ -7,12 +7,12 @@ const SalesRep = sequelize.define('SalesRep', {
     autoIncrement: true,
     primaryKey: true,
   },
-  first_name: {
+  dept: {
     type: DataTypes.STRING(100),
     allowNull: false,
   },
-  last_name: {
-    type: DataTypes.STRING(100),
+  full_name: {
+    type: DataTypes.STRING(150),
     allowNull: false,
   },
   email: {
@@ -23,18 +23,21 @@ const SalesRep = sequelize.define('SalesRep', {
       isEmail: true,
     },
   },
-  phone: {
-    type: DataTypes.STRING(20),
+  localisation: {
+    type: DataTypes.STRING(100),
     allowNull: true,
   },
   region: {
     type: DataTypes.STRING(100),
     allowNull: true,
   },
-  hire_date: {
-    type: DataTypes.DATEONLY,
+  attached_plant: {
+    type: DataTypes.STRING(100),
     allowNull: true,
-    defaultValue: DataTypes.NOW,
+  },
+  note: {
+    type: DataTypes.TEXT,
+    allowNull: true,
   },
 }, {
   tableName: 'sales_reps',

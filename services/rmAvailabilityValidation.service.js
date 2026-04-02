@@ -1,5 +1,7 @@
 const RMAvailabilityValidation = require('../models/rmAvailabilityValidation.model')
+const RawMaterial = require('../models/rawMaterial.model')
 const ssrService = require('./ssr.service')
+const sequelize = require('../config/sequelize')
 const fs = require('fs')
 const path = require('path')
 
@@ -39,13 +41,20 @@ const buildDocumentPayload = (file) => {
 
 const mergeAccessData = (ssr, validation) => ({
   ...ssr,
-  rawMaterials: Array.isArray(ssr?.stsForm?.rawMaterials) ? ssr.stsForm.rawMaterials : [],
+  quantityRequested: ssr?.quantityRequested ?? null,
+  quantityRequestedProduct: ssr?.quantityRequested ?? null,
+  productAvailableForSale: ssrService.normalizeNullableString(ssr?.productInventoryValidation?.productAvailableForSale) || '',
+  rawMaterials: ssrService.mergeRMAvailabilityRawMaterials(
+    ssrService.getBaseRawMaterials(ssr),
+    Array.isArray(ssr?.rmAvailabilityRawMaterials) ? ssr.rmAvailabilityRawMaterials : []
+  ),
   rmAvailabilityValidation: formatRMAvailabilityValidationForFrontend(validation),
 })
 
 const saveRMAvailabilityValidation = async (data, file) => {
   const ssr = await ssrService.getSmallSerialRequestById(data.ssrId)
   if (!ssr) throw new Error('SmallSerialRequest not found')
+  const rawMaterialRecords = ssrService.buildRawMaterialRecordsForStorage(data.rawMaterials)
 
   const existingValidation = await RMAvailabilityValidation.findOne({
     where: { ssrId: data.ssrId },
@@ -54,31 +63,51 @@ const saveRMAvailabilityValidation = async (data, file) => {
   const documentPayload = buildDocumentPayload(file)
 
   let savedValidation = null
+  const transaction = await sequelize.transaction()
 
-  if (existingValidation) {
-    if (!documentPayload) {
-      savedValidation = existingValidation
+  try {
+    if (existingValidation) {
+      if (!documentPayload) {
+        savedValidation = existingValidation
+      } else {
+        await existingValidation.update(documentPayload, { transaction })
+        savedValidation = existingValidation
+      }
     } else {
-      await existingValidation.update(documentPayload)
-      savedValidation = existingValidation
-    }
-  } else {
-    if (!documentPayload) {
-      throw new Error('approval document is required')
-    }
+      if (!documentPayload) {
+        throw new Error('approval document is required')
+      }
 
-    try {
       savedValidation = await RMAvailabilityValidation.create({
         ssrId: data.ssrId,
         ...documentPayload,
-      })
-    } catch (error) {
-      if (file?.path && fs.existsSync(file.path)) {
-        fs.unlinkSync(file.path)
-      }
-
-      throw error
+      }, { transaction })
     }
+
+    await RawMaterial.destroy({
+      where: { ssrId: data.ssrId },
+      transaction,
+    })
+
+    if (rawMaterialRecords.length > 0) {
+      await RawMaterial.bulkCreate(
+        rawMaterialRecords.map((row) => ({
+          ssrId: data.ssrId,
+          ...row,
+        })),
+        { transaction }
+      )
+    }
+
+    await transaction.commit()
+  } catch (error) {
+    await transaction.rollback()
+
+    if (!existingValidation && file?.path && fs.existsSync(file.path)) {
+      fs.unlinkSync(file.path)
+    }
+
+    throw error
   }
 
   try {

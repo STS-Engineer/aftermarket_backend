@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "nodemon index.js",
     "start": "node index.js",
+    "sync:product-composition": "node scripts/importProductComposition.js",
+    "sync:sales-reps": "node scripts/syncSalesReps.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

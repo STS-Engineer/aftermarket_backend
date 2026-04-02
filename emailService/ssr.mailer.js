@@ -1,5 +1,6 @@
 const nodemailer = require('nodemailer')
 const jwt = require('jsonwebtoken')
+const { getSalesRepDisplayName } = require('../utils/salesRep')
 
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
@@ -117,10 +118,8 @@ const formatDate = (value) => {
 }
 
 const getKamName = (ssr) => {
-  if (ssr?.kam && typeof ssr.kam === 'object') {
-    const fullName = [ssr.kam.first_name, ssr.kam.last_name].filter(Boolean).join(' ').trim()
-    if (fullName) return fullName
-  }
+  const fullName = getSalesRepDisplayName(ssr?.kam)
+  if (fullName) return fullName
 
   if (typeof ssr?.kam === 'string' && ssr.kam.trim()) {
     return ssr.kam.trim()
@@ -690,8 +689,8 @@ const buildStsCompletionHtml = ({ recipientName, ssr, fourMValidation, stsForm, 
                   title: 'STS Form',
                   subtitle: 'Commercial and raw material information',
                   rows: `
-                    ${twoColumnRow('Status 1', stsForm?.status1 || '-', 'Product Current Stock', stsForm?.productCurrentStock || '-')}
-                    ${twoColumnRow('Last Selling Price', stsForm?.lastSellingPrice || '-', 'Last Selling Date', formatDate(stsForm?.lastSellingDate))}
+                    ${twoColumnRow('Product Current Stock', stsForm?.productCurrentStock || '-', 'Last Selling Price', stsForm?.lastSellingPrice || '-')}
+                    ${fullWidthRow('Last Selling Date', formatDate(stsForm?.lastSellingDate))}
                     ${formatRawMaterialsForEmail(stsForm?.rawMaterials || [])}
                   `,
                   fullWidth: true,

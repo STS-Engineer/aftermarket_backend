@@ -29,11 +29,6 @@ const STSForm = sequelize.define(
       allowNull: true,
       field: 'last_selling_date',
     },
-    status1: {
-      type: DataTypes.STRING,
-      allowNull: false,
-      field: 'status_1',
-    },
     rawMaterials: {
       type: DataTypes.JSONB,
       allowNull: false,

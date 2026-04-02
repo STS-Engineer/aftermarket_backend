@@ -1,9 +1,22 @@
 const rmAvailabilityValidationService = require('../services/rmAvailabilityValidation.service')
 const { verifyStsAccessToken } = require('../emailService/ssr.mailer')
 
+const parseRawMaterials = (value) => {
+  if (Array.isArray(value)) return value
+  if (!value) return []
+
+  try {
+    const parsed = JSON.parse(value)
+    return Array.isArray(parsed) ? parsed : []
+  } catch (error) {
+    throw new Error('rawMaterials must be valid JSON')
+  }
+}
+
 const buildValidationPayload = (body) => {
   const payload = {
     ssrId: body.ssrId ? Number(body.ssrId) : null,
+    rawMaterials: parseRawMaterials(body.rawMaterials),
   }
 
   const missing = []
@@ -19,6 +32,7 @@ const handleServiceError = (res, error, logPrefix) => {
   if (error.message === 'SmallSerialRequest not found') status = 404
   if (error.message === 'RM availability validation not found') status = 404
   if (error.message === 'approval document is required') status = 400
+  if (error.message === 'rawMaterials must be valid JSON') status = 400
 
   return res.status(status).json({ message: error.message || 'Internal server error' })
 }

@@ -13,20 +13,67 @@ const parseRawMaterials = (value) => {
   }
 }
 
+const getFirstDefinedRawMaterialValue = (row, keys) => {
+  for (const key of keys) {
+    if (!Object.prototype.hasOwnProperty.call(row || {}, key)) continue
+
+    const value = row[key]
+
+    if (value === undefined || value === null) continue
+    if (typeof value === 'string') {
+      if (value.trim()) return value
+      continue
+    }
+
+    return value
+  }
+
+  return null
+}
+
+const getSpecificRMRawMaterialErrors = (rawMaterials = []) => {
+  const requiredFields = [
+    {
+      label: 'Minimum Order Quantity',
+      keys: ['minimumOrderQuantity', 'minimum_order_quantity', 'minimumOrderQty', 'moq'],
+    },
+    {
+      label: 'X MOQ to Order',
+      keys: ['xMoqToOrder', 'xMOQToOrder', 'x_moq_to_order', 'orderMultiplier', 'order_multiplier', 'multiplier'],
+    },
+    {
+      label: 'Quantity Under Order',
+      keys: ['quantityUnderOrder', 'quantity_under_order', 'orderedQuantity', 'ordered_quantity', 'qtyUnderOrder'],
+    },
+    {
+      label: 'Lead time (week)',
+      keys: ['leadTimeWeek', 'leadTimeWeeks', 'lead_time_week', 'leadTime', 'lead_time', 'leadTimeInWeek'],
+    },
+    {
+      label: 'Supplier Price Proposal',
+      keys: ['supplierPriceProposal', 'supplier_price_proposal', 'currentPurchasePrice', 'current_purchase_price'],
+    },
+  ]
+
+  return rawMaterials.flatMap((row, index) => (
+    requiredFields
+      .filter((field) => getFirstDefinedRawMaterialValue(row, field.keys) === null)
+      .map((field) => `Row ${index + 1}: ${field.label}`)
+  ))
+}
+
 const buildPayload = (body) => {
   const payload = {
     ssrId: body.ssrId ? Number(body.ssrId) : null,
     productCurrentStock: body.productCurrentStock ?? null,
     lastSellingPrice: body.lastSellingPrice ?? null,
     lastSellingDate: body.lastSellingDate || null,
-    status1: String(body.status1 || '').trim(),
     rawMaterials: parseRawMaterials(body.rawMaterials),
   }
 
   const missing = []
 
   if (!payload.ssrId) missing.push('ssrId')
-  if (!payload.status1) missing.push('status1')
 
   return { missing, payload }
 }
@@ -73,6 +120,14 @@ const submitSpecificRMStudyFormByToken = async (req, res) => {
     if (missing.length > 0) {
       return res.status(400).json({
         message: `Missing required fields: ${missing.join(', ')}`,
+      })
+    }
+
+    const rawMaterialErrors = getSpecificRMRawMaterialErrors(payload.rawMaterials)
+
+    if (rawMaterialErrors.length > 0) {
+      return res.status(400).json({
+        message: `Missing required raw material fields: ${rawMaterialErrors.join(', ')}`,
       })
     }
 

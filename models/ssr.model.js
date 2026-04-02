@@ -5,6 +5,7 @@ const FourMValidation = require("./fourMValidation.model");
 const STSForm = require("./stsForm.model");
 const ProductInventoryValidation = require("./productInventoryValidation.model");
 const RMAvailabilityValidation = require('./rmAvailabilityValidation.model');
+const RawMaterial = require('./rawMaterial.model');
 
 const SmallSerialRequest = sequelize.define(
   "SmallSerialRequest",
@@ -90,6 +91,11 @@ SmallSerialRequest.hasOne(ProductInventoryValidation, {
 SmallSerialRequest.hasOne(RMAvailabilityValidation, {
   foreignKey: "ssrId",
   as: "rmAvailabilityValidation",
+});
+
+SmallSerialRequest.hasMany(RawMaterial, {
+  foreignKey: "ssrId",
+  as: "rmAvailabilityRawMaterials",
 });
 
 module.exports = SmallSerialRequest;

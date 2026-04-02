@@ -1,12 +1,13 @@
 const SalesRep = require('../models/sales_reps');
+const { formatSalesRep } = require('../utils/salesRep')
 
 const getAllSalesReps = async () => {
   try {
     const salesReps = await SalesRep.findAll({
-      order: [['id', 'ASC']],
+      order: [['full_name', 'ASC'], ['id', 'ASC']],
     });
 
-    return salesReps;
+    return salesReps.map(formatSalesRep)
   } catch (error) {
     throw new Error(`Error fetching sales reps: ${error.message}`);
   }
@@ -20,7 +21,7 @@ const getSalesRepById = async (id) => {
       throw new Error('Sales rep not found');
     }
 
-    return salesRep;
+    return formatSalesRep(salesRep)
   } catch (error) {
     if (error.message === 'Sales rep not found') {
       throw error;

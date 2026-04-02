@@ -1,0 +1,18 @@
+
+Exception non g‚r‚eÿ: System.Management.Automation.PSArgumentException: Impossible de traiter l'argument car la valeur de l'argument ®ÿnameÿ¯ n'est pas valide. Modifiez la valeur de l'argument ®ÿnameÿ¯ et r‚ex‚cutez l'op‚ration.
+   … System.Management.Automation.MergedCommandParameterMetadata.GetMatchingParameter(String name, Boolean throwOnParameterNotFound, Boolean tryExactMatching, InvocationInfo invocationInfo)
+   … System.Management.Automation.ParameterBinderController.ReparseUnboundArguments()
+   … System.Management.Automation.CmdletParameterBinderController.BindCommandLineParametersNoValidation(Collection`1 arguments)
+   … System.Management.Automation.CmdletParameterBinderController.BindCommandLineParameters(Collection`1 arguments)
+   … System.Management.Automation.CommandProcessor.BindCommandLineParameters()
+   … System.Management.Automation.CommandProcessor.Prepare(IDictionary psDefaultParameterValues)
+   … System.Management.Automation.CommandProcessorBase.DoPrepare(IDictionary psDefaultParameterValues)
+   … System.Management.Automation.Internal.PipelineProcessor.Start(Boolean incomingStream)
+   … System.Management.Automation.Internal.PipelineProcessor.SynchronousExecuteEnumerate(Object input)
+   … System.Management.Automation.Runspaces.LocalPipeline.InvokeHelper()
+   … System.Management.Automation.Runspaces.LocalPipeline.InvokeThreadProc()
+   … System.Management.Automation.Runspaces.PipelineThread.WorkerProc()
+   … System.Threading.ExecutionContext.RunInternal(ExecutionContext executionContext, ContextCallback callback, Object state, Boolean preserveSyncCtx)
+   … System.Threading.ExecutionContext.Run(ExecutionContext executionContext, ContextCallback callback, Object state, Boolean preserveSyncCtx)
+   … System.Threading.ExecutionContext.Run(ExecutionContext executionContext, ContextCallback callback, Object state)
+   … System.Threading.ThreadHelper.ThreadStart()

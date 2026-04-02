@@ -19,14 +19,12 @@ const buildStsPayload = (body) => {
     productCurrentStock: body.productCurrentStock ?? null,
     lastSellingPrice: body.lastSellingPrice ?? null,
     lastSellingDate: body.lastSellingDate || null,
-    status1: String(body.status1 || '').trim(),
     rawMaterials: parseRawMaterials(body.rawMaterials),
   }
 
   const missing = []
 
   if (!payload.ssrId) missing.push('ssrId')
-  if (!payload.status1) missing.push('status1')
 
   return { missing, payload }
 }
