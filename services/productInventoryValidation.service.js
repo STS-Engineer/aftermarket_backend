@@ -20,7 +20,7 @@ const deriveProductionToLaunch = ({ quantityRequested, productCurrentStock }) =>
   const stock = toFiniteNumber(productCurrentStock)
 
   if (quantity !== null && stock !== null) {
-    return String(Math.max(quantity - stock, 0))
+    return String(quantity - stock)
   }
 
   if (quantity !== null) return String(quantity)
@@ -49,14 +49,20 @@ const formatProductInventoryValidationForFrontend = (validation) => {
 
 const mergeAccessData = (ssr, validation) => {
   const formattedValidation = formatProductInventoryValidationForFrontend(validation)
-  const productCurrentStock = normalizeNullableString(ssr?.stsForm?.productCurrentStock) || ''
+  const productCurrentStock =
+    normalizeNullableString(
+      ssr?.productCurrentStock ??
+      ssr?.product_current_stock ??
+      ssr?.stsForm?.productCurrentStock ??
+      ssr?.stsForm?.product_current_stock,
+    ) || ''
 
   return {
     ...ssr,
     productDesignation: ssr?.referenceDesignation || '',
     productCurrentStock,
     productionToLaunch: deriveProductionToLaunch({
-      quantityRequested: ssr?.quantityRequested,
+      quantityRequested: ssr?.quantityRequested ?? ssr?.quantity_requested,
       productCurrentStock,
     }),
     productAvailableForSale: formattedValidation?.productAvailableForSale || '',
@@ -122,19 +128,6 @@ const saveProductInventoryValidation = async (data, file) => {
 
       throw error
     }
-  }
-
-  try {
-    const refreshedSsr = await ssrService.getSmallSerialRequestById(data.ssrId)
-    const { sendSubmissionSummaryEmails } = require('../emailService/ssrSummary.mailer')
-
-    await sendSubmissionSummaryEmails({
-      ssr: refreshedSsr,
-      submittedFormKey: 'product-inventory-validation',
-      submittedFormLabel: 'Product Inventory Validation Form',
-    })
-  } catch (error) {
-    console.error('sendSubmissionSummaryEmails for Product Inventory error:', error.message)
   }
 
   return formatProductInventoryValidationForFrontend(savedValidation)

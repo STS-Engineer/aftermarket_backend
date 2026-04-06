@@ -34,6 +34,15 @@ const EMPTY_METRICS = Object.freeze({
   lastSellingDate: '',
 })
 
+const EMPTY_PRODUCT_METRICS = Object.freeze({
+  lastInventoryQuantity: '',
+  lastInventoryDate: '',
+  lastSellingPrice: '',
+  lastSellingDate: '',
+  lastMovementPrice: '',
+  lastMovementDate: '',
+})
+
 const RAW_MATERIAL_METRICS_QUERY = `
 WITH LatestInventory AS (
     SELECT
@@ -84,6 +93,72 @@ SELECT
 FROM LatestInventory i
 FULL OUTER JOIN LatestMovements m
     ON i."Internal_reference" = m."Internal_reference"
+`
+
+const PRODUCT_METRICS_QUERY = `
+WITH FilteredInventory AS (
+    SELECT
+        "Internal_reference",
+        "Inventory_quantity",
+        "Inventory_date"
+    FROM dw."FI-D6_Inventory"
+    WHERE "Internal_reference" IN (:internalReferences)
+),
+LatestInventory AS (
+    SELECT
+        "Internal_reference",
+        "Inventory_quantity",
+        "Inventory_date"
+    FROM (
+        SELECT
+            "Internal_reference",
+            "Inventory_quantity",
+            "Inventory_date",
+            ROW_NUMBER() OVER (
+                PARTITION BY "Internal_reference"
+                ORDER BY "Inventory_date" DESC
+            ) AS row_num
+        FROM FilteredInventory
+    ) inventory_rows
+    WHERE row_num = 1
+),
+FilteredSales AS (
+    SELECT
+        "Internal_reference",
+        ("Value_in_currency" / NULLIF("Qty", 0)) AS "Last_Selling_price",
+        "Selling_date"
+    FROM dw."FI-D7_Sales"
+    WHERE "Qty" <> 0
+      AND "Site" NOT IN ('Sceet')
+      AND "Internal_reference" IN (:internalReferences)
+),
+LatestSales AS (
+    SELECT
+        "Internal_reference",
+        "Last_Selling_price",
+        "Selling_date"
+    FROM (
+        SELECT
+            "Internal_reference",
+            "Last_Selling_price",
+            "Selling_date",
+            ROW_NUMBER() OVER (
+                PARTITION BY "Internal_reference"
+                ORDER BY "Selling_date" DESC
+            ) AS row_num
+        FROM FilteredSales
+    ) sales_rows
+    WHERE row_num = 1
+)
+SELECT
+    COALESCE(inv."Internal_reference", sales."Internal_reference") AS "internalReference",
+    inv."Inventory_quantity" AS "lastInventoryQuantity",
+    inv."Inventory_date" AS "lastInventoryDate",
+    sales."Last_Selling_price" AS "lastSellingPrice",
+    sales."Selling_date" AS "lastSellingDate"
+FROM LatestInventory inv
+FULL OUTER JOIN LatestSales sales
+    ON inv."Internal_reference" = sales."Internal_reference"
 `
 
 let hasLoggedMissingConfigWarning = false
@@ -157,6 +232,74 @@ const getRawMaterialMetricsByInternalReferences = async (internalReferences = []
   }
 }
 
+const getProductMetricsByInternalReferences = async (internalReferences = []) => {
+  const normalizedReferences = [...new Set(
+    internalReferences
+      .map(normalizeNullableString)
+      .filter(Boolean)
+  )]
+
+  if (normalizedReferences.length === 0) {
+    return new Map()
+  }
+
+  if (!isWarehouseConfigured()) {
+    if (!hasLoggedMissingConfigWarning) {
+      hasLoggedMissingConfigWarning = true
+      console.warn('DW database is not configured. Raw material stock and purchase price enrichment is disabled.')
+    }
+
+    return new Map(normalizedReferences.map((reference) => [reference, { ...EMPTY_PRODUCT_METRICS }]))
+  }
+
+  const sequelize = getWarehouseSequelize()
+
+  try {
+    const rows = await sequelize.query(PRODUCT_METRICS_QUERY, {
+      replacements: { internalReferences: normalizedReferences },
+      type: QueryTypes.SELECT,
+    })
+
+    console.log('DW product inventory and sales query result:', {
+      requestedReferences: normalizedReferences,
+      rowCount: rows.length,
+      rows: rows.map((row) => ({
+        internalReference: row.internalReference,
+        lastInventoryQuantity: row.lastInventoryQuantity,
+        lastInventoryDate: row.lastInventoryDate,
+        lastSellingPrice: row.lastSellingPrice,
+        lastSellingDate: row.lastSellingDate,
+      })),
+    })
+
+    const metricsByReference = new Map(
+      normalizedReferences.map((reference) => [reference, { ...EMPTY_PRODUCT_METRICS }])
+    )
+
+    for (const row of rows) {
+      const reference = normalizeNullableString(row.internalReference)
+      if (!reference) continue
+
+      const lastSellingPrice = normalizeNullableString(row.lastSellingPrice) || ''
+      const lastSellingDate = normalizeDateString(row.lastSellingDate)
+
+      metricsByReference.set(reference, {
+        lastInventoryQuantity: normalizeNullableString(row.lastInventoryQuantity) || '',
+        lastInventoryDate: normalizeDateString(row.lastInventoryDate),
+        lastSellingPrice,
+        lastSellingDate,
+        lastMovementPrice: lastSellingPrice,
+        lastMovementDate: lastSellingDate,
+      })
+    }
+
+    return metricsByReference
+  } catch (error) {
+    console.error('product inventory and sales DW query error:', error.message)
+    return new Map(normalizedReferences.map((reference) => [reference, { ...EMPTY_PRODUCT_METRICS }]))
+  }
+}
+
 const enrichRawMaterialRowsWithMetrics = async (rawMaterials = []) => {
   if (!Array.isArray(rawMaterials) || rawMaterials.length === 0) {
     return []
@@ -198,5 +341,6 @@ const enrichRawMaterialRowsWithMetrics = async (rawMaterials = []) => {
 
 module.exports = {
   getRawMaterialMetricsByInternalReferences,
+  getProductMetricsByInternalReferences,
   enrichRawMaterialRowsWithMetrics,
 }

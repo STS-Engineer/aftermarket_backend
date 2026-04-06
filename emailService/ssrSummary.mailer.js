@@ -1,5 +1,6 @@
 const { transporter } = require('./mailTransport')
-const { buildPricingCalculatorBuffer } = require('./pricingCalculatorWorkbook')
+const { XLSX_CONTENT_TYPE, buildPricingCalculatorBuffer } = require('./pricingCalculatorWorkbook')
+const { buildSubmissionSummaryPdfBuffer } = require('./summaryPdfBuilder')
 const { getSalesRepDisplayName } = require('../utils/salesRep')
 
 const RECENT_EMAIL_WINDOW_MS = 5 * 60 * 1000
@@ -277,13 +278,13 @@ const buildAttachments = (ssr, submittedFormKey, submittedFormLabel) => {
   return [
     {
       filename: `${reference}-${submittedFormKey}-summary.pdf`,
-      content: buildPdfBuffer(ssr, submittedFormLabel),
+      content: buildSubmissionSummaryPdfBuffer({ ssr, submittedFormLabel }),
       contentType: 'application/pdf',
     },
     {
-      filename: `${reference}-${submittedFormKey}-pricing-calculator.xls`,
+      filename: `${reference}-${submittedFormKey}-pricing-calculator.xlsx`,
       content: buildPricingCalculatorBuffer(ssr, submittedFormLabel),
-      contentType: 'application/vnd.ms-excel',
+      contentType: XLSX_CONTENT_TYPE,
     },
   ]
 }

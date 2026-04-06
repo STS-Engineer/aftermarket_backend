@@ -12,6 +12,7 @@ const rmAvailabilityValidationRoutes = require('./routes/rmAvailabilityValidatio
 const userRoutes = require("./routes/userRoutes");
 const salesRoutes = require('./routes/salesRoutes');
 const rawMaterialMetricsRoutes = require('./routes/rawMaterialMetrics.route');
+const { startWorkflowReminderScheduler } = require('./services/workflowReminder.service');
 
 const app = express();
 
@@ -53,6 +54,8 @@ async function startServer() {
     await sequelize.query('ALTER TABLE IF EXISTS raw_materials ADD COLUMN IF NOT EXISTS status BOOLEAN DEFAULT TRUE');
     await sequelize.sync();
     console.log("Models synchronized successfully");
+
+    startWorkflowReminderScheduler();
 
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);

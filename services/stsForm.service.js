@@ -3,7 +3,7 @@ const FourMValidation = require('../models/fourMValidation.model')
 const RawMaterial = require('../models/rawMaterial.model')
 const ssrService = require('./ssr.service')
 const { getRawMaterialsByProductReference } = require('./productComposition.service')
-const { getRawMaterialMetricsByInternalReferences } = require('./rawMaterialMetrics.service')
+const { getProductMetricsByInternalReferences } = require('./rawMaterialMetrics.service')
 
 const normalizeNullableString = (value) => {
   if (value === undefined || value === null) return null
@@ -120,8 +120,8 @@ const resolveSupplierPriceProposal = (row, scalarEntries = {}) => (
 
 const resolveProductFields = (source, productMetrics = {}) => ({
   productCurrentStock: normalizeNullableString(source?.productCurrentStock) || productMetrics.lastInventoryQuantity || '',
-  lastSellingPrice: normalizeNullableString(source?.lastSellingPrice) || productMetrics.lastMovementPrice || '',
-  lastSellingDate: normalizeNullableString(source?.lastSellingDate) || productMetrics.lastMovementDate || '',
+  lastSellingPrice: normalizeNullableString(source?.lastSellingPrice) || productMetrics.lastSellingPrice || productMetrics.lastMovementPrice || '',
+  lastSellingDate: normalizeNullableString(source?.lastSellingDate) || productMetrics.lastSellingDate || productMetrics.lastMovementDate || '',
 })
 
 const normalizeRawMaterials = (rawMaterials) => {
@@ -192,7 +192,7 @@ const getProductMetrics = async (ssr) => {
   const productReference = getSsrProductReference(ssr)
   if (!productReference) return null
 
-  const metricsByReference = await getRawMaterialMetricsByInternalReferences([productReference])
+  const metricsByReference = await getProductMetricsByInternalReferences([productReference])
   return metricsByReference.get(productReference) || null
 }
 

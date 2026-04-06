@@ -2,7 +2,6 @@ const FourMValidation = require('../models/fourMValidation.model')
 const SmallSerialRequest = require('../models/ssr.model')
 const fs = require('fs')
 const path = require('path')
-const ssrService = require('./ssr.service')
 
 const formatValidationForFrontend = (validation) => {
   if (!validation) return null
@@ -46,19 +45,6 @@ const createFourMValidation = async (data, file) => {
       documentSize: file.size,
       documentData: Buffer.from(relativeDocumentPath, 'utf8'),
     })
-
-    try {
-      const refreshedSsr = await ssrService.getSmallSerialRequestById(data.ssrId)
-      const { sendSubmissionSummaryEmails } = require('../emailService/ssrSummary.mailer')
-
-      await sendSubmissionSummaryEmails({
-        ssr: refreshedSsr,
-        submittedFormKey: 'four-m-validation',
-        submittedFormLabel: '4M Validation Form',
-      })
-    } catch (error) {
-      console.error('sendSubmissionSummaryEmails for 4M Validation error:', error.message)
-    }
 
     return formatValidationForFrontend(validation)
   } catch (error) {

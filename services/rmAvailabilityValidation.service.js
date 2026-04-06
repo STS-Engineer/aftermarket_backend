@@ -110,19 +110,6 @@ const saveRMAvailabilityValidation = async (data, file) => {
     throw error
   }
 
-  try {
-    const refreshedSsr = await ssrService.getSmallSerialRequestById(data.ssrId)
-    const { sendSubmissionSummaryEmails } = require('../emailService/ssrSummary.mailer')
-
-    await sendSubmissionSummaryEmails({
-      ssr: refreshedSsr,
-      submittedFormKey: 'rm-availability-validation',
-      submittedFormLabel: 'RM Availability Validation Form',
-    })
-  } catch (error) {
-    console.error('sendSubmissionSummaryEmails for RM Availability error:', error.message)
-  }
-
   return formatRMAvailabilityValidationForFrontend(savedValidation)
 }
 
