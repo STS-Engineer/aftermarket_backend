@@ -1,6 +1,7 @@
 const { transporter } = require('./mailTransport')
 const { generateFourMAccessToken, generateStsAccessToken } = require('./ssr.mailer')
 const { getSalesRepDisplayName } = require('../utils/salesRep')
+const { getUserRecipientsByRole } = require('../services/userRoleRecipient.service')
 
 const normalizeEmail = (value) => String(value || '').trim().toLowerCase()
 
@@ -35,22 +36,12 @@ const getKamName = (ssr) => {
   return '-'
 }
 
-const getRecipientGroup = (formKey) => {
-  const fadwa = {
-    name: process.env.FADWA_NAME || 'Fadwa',
-    email: normalizeEmail(process.env.FADWA_EMAIL),
-  }
-
-  const stsRecipients = [
-    { name: process.env.HAMDI_NAME || 'Hamdi', email: normalizeEmail(process.env.HAMDI_EMAIL) },
-    { name: process.env.AZIZA_NAME || 'Aziza', email: normalizeEmail(process.env.AZIZA_EMAIL) },
-  ].filter((recipient, index, array) => recipient.email && array.findIndex((entry) => entry.email === recipient.email) === index)
-
+const getRecipientGroup = async (formKey) => {
   if (formKey === 'fourM' || formKey === 'productInventory') {
-    return fadwa.email ? [fadwa] : []
+    return await getUserRecipientsByRole('site')
   }
 
-  return stsRecipients
+  return await getUserRecipientsByRole('sts')
 }
 
 const getActionUrl = (formKey, ssrId) => {
@@ -137,7 +128,7 @@ const buildReminderHtml = ({ ssr, formLabel, startedAt, delayHours, actionUrl, r
 `
 
 const sendWorkflowReminderEmail = async ({ ssr, formKey, formLabel, startedAt, delayHours }) => {
-  const recipients = getRecipientGroup(formKey)
+  const recipients = await getRecipientGroup(formKey)
   if (recipients.length === 0) {
     console.warn(`No recipients configured for workflow reminder: ${formKey}`)
     return []

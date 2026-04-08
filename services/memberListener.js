@@ -32,15 +32,8 @@ async function createUserAuth(member) {
       member_id: member.id,
       email:     member.email,
       password:  rawPassword,
+      role:      'user',
     });
-
-    console.log('─────────────────────────────────────────────');
-    console.log(`✅ Nouveau membre détecté dans avocarbon_directory`);
-    console.log(`   Nom      : ${member.first_name} ${member.last_name}`);
-    console.log(`   Email    : ${member.email}`);
-    console.log(`   Password : ${rawPassword} → hashé dans AVOCarbonDB_Form`);
-    console.log('─────────────────────────────────────────────');
-
   } catch (err) {
     console.error(`❌ Erreur création UserAuth :`, err.message);
   }

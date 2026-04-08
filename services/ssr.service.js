@@ -308,6 +308,13 @@ const createSmallSerialRequest = async (data) => {
     console.error('sendNewSmallSerialRequestEmails error:', error)
   }
 
+  try {
+    const { sendKamRequestConfirmationEmail } = require('../emailService/ssr.mailer')
+    await sendKamRequestConfirmationEmail({ ssr: formattedRequest })
+  } catch (error) {
+    console.error('sendKamRequestConfirmationEmail error:', error)
+  }
+
   return formattedRequest
 }
 

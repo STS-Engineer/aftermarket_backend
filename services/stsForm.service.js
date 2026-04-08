@@ -349,14 +349,14 @@ const saveStsForm = async (data) => {
       FourMValidation.findOne({ where: { ssrId: data.ssrId } }),
     ])
 
-    const { sendStsFormSubmittedEmailToFadwa } = require('../emailService/ssr.mailer')
-    await sendStsFormSubmittedEmailToFadwa({
+    const { sendStsFormSubmittedEmailToSiteRecipients } = require('../emailService/ssr.mailer')
+    await sendStsFormSubmittedEmailToSiteRecipients({
       ssr,
       fourMValidation: formatFourMValidationForEmail(fourMValidation),
       stsForm: formatStsFormForFrontend(form),
     })
   } catch (error) {
-    console.error('sendStsFormSubmittedEmailToFadwa error:', error.message)
+    console.error('sendStsFormSubmittedEmailToSiteRecipients error:', error.message)
   }
 
   return formatStsFormForFrontend(form)

@@ -23,6 +23,11 @@ const UserAuth = sequelize.define('UserAuth', {
     type: DataTypes.STRING(255),
     allowNull: false,
   },
+  role: {
+    type: DataTypes.STRING(50),
+    allowNull: false,
+    defaultValue: 'user',
+  },
   created_at: {
     type: DataTypes.DATE,
     defaultValue: DataTypes.NOW,

@@ -14,8 +14,6 @@ async function getAllUsers() {
 async function signIn(email, password) {
   const member = await CompanyMember.findOne({ where: { email } })
 
-  console.log(`Tentative de connexion pour ${email} : ${member ? 'Membre trouvé' : 'Membre non trouvé'}`)
-
   if (!member) {
     const err = new Error('Email ou mot de passe incorrect.')
     err.status = 401
@@ -98,7 +96,7 @@ async function changePassword(memberId, oldPassword, newPassword) {
 
   const userAuth = await UserAuth.findOne({ where: { member_id: memberId } })
   if (!userAuth) {
-    const err = new Error('Aucun mot de passe local trouvé pour ce compte.')
+    const err = new Error('Aucun mot de passe local trouvï¿½ pour ce compte.')
     err.status = 404
     throw err
   }
@@ -112,7 +110,7 @@ async function changePassword(memberId, oldPassword, newPassword) {
 
   await userAuth.update({ password: newPassword })
 
-  return { message: 'Mot de passe mis à jour avec succès.' }
+  return { message: 'Mot de passe mis ï¿½ jour avec succï¿½s.' }
 }
 
 async function requestPasswordReset(email) {

@@ -1,6 +1,7 @@
 const nodemailer = require('nodemailer')
 const jwt = require('jsonwebtoken')
 const { getSalesRepDisplayName } = require('../utils/salesRep')
+const { getUserRecipientsByRole } = require('../services/userRoleRecipient.service')
 
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
@@ -19,36 +20,14 @@ const recentEmailKeys = new Map()
 
 const normalizeEmail = (value) => String(value || '').trim().toLowerCase()
 
-const getInitialWorkflowRecipients = () => {
-  const fadwaEmail = normalizeEmail(process.env.FADWA_EMAIL)
-  const stsRecipientEmails = [process.env.HAMDI_EMAIL, process.env.AZIZA_EMAIL]
-    .map(normalizeEmail)
-    .filter(Boolean)
-    .filter((email, index, array) => array.indexOf(email) === index)
+const getInitialWorkflowRecipients = async () => {
+  const siteRecipients = await getUserRecipientsByRole('site')
+  const stsRecipients = await getUserRecipientsByRole('sts')
 
   return {
-    fourMRecipient: fadwaEmail ? {
-      key: 'fadwa',
-      name: process.env.FADWA_NAME || 'Fadwa',
-      email: fadwaEmail,
-    } : null,
-    stsRecipients: stsRecipientEmails,
+    siteRecipients,
+    stsRecipients,
   }
-}
-
-const getRecipients = () => {
-  const seenEmails = new Set()
-
-  return [
-    { key: 'fadwa', name: process.env.FADWA_NAME || 'Fadwa', email: process.env.FADWA_EMAIL },
-    { key: 'hamdi', name: process.env.HAMDI_NAME || 'Hamdi', email: process.env.HAMDI_EMAIL },
-    { key: 'aziza', name: process.env.AZIZA_NAME || 'Aziza', email: process.env.AZIZA_EMAIL },
-  ].filter((recipient) => {
-    const normalizedEmail = normalizeEmail(recipient.email)
-    if (!normalizedEmail || seenEmails.has(normalizedEmail)) return false
-    seenEmails.add(normalizedEmail)
-    return true
-  })
 }
 
 const sendMailOnce = async ({ dedupeKey, mailOptions, windowMs = RECENT_EMAIL_WINDOW_MS }) => {
@@ -79,8 +58,6 @@ const sendMailOnce = async ({ dedupeKey, mailOptions, windowMs = RECENT_EMAIL_WI
     throw error
   }
 }
-
-const getRecipientByKey = (key) => getRecipients().find((recipient) => recipient.key === key) || null
 
 const generateFourMAccessToken = (ssrId) => jwt.sign(
   { ssrId, purpose: 'four_m_validation_access' },
@@ -332,7 +309,13 @@ const buildActionCard = ({ title, description, actionUrl, buttonLabel }) => `
   </table>
 `
 
-const buildHtml = ({ recipientName, ssr, action = null }) => `
+const buildInlineLink = (label, href) => `
+  <div style="margin:0 0 6px;font-size:13px;line-height:1.6;color:#6b7280;">
+    <a href="${escapeHtml(href)}" style="color:#ea580c;text-decoration:none;font-weight:600;">${escapeHtml(label)}</a>
+  </div>
+`
+
+const buildHtml = ({ recipientName, ssr, action = null, introHtml = '' }) => `
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -376,6 +359,7 @@ const buildHtml = ({ recipientName, ssr, action = null }) => `
                 ">
                   Fill in all required fields to submit a production request to the team.
                 </p>
+                ${introHtml}
               </td>
             </tr>
 
@@ -519,11 +503,122 @@ const buildHtml = ({ recipientName, ssr, action = null }) => `
 </html>
 `
 
-const buildSubject = (ssr) => `[AVOCarbon] New SSR - ${ssr.productReference}`
+const buildKamConfirmationHtml = ({ recipientName, ssr }) => `
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Small Serial Request Sent</title>
+  </head>
+  <body style="margin:0;padding:0;background:#f3f4f6;font-family:'Geist','Segoe UI',system-ui,sans-serif;color:#111827;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4f6;padding:32px 12px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:860px;">
+            <tr>
+              <td style="padding:0 0 24px;">
+                <div style="
+                  display:inline-block;
+                  padding:3px 9px;
+                  border:1px solid rgba(249,115,22,0.30);
+                  border-radius:999px;
+                  background:rgba(249,115,22,0.07);
+                  color:#ea580c;
+                  font-size:10px;
+                  font-weight:600;
+                  letter-spacing:0.09em;
+                  text-transform:uppercase;
+                  margin-bottom:10px;
+                ">Small Serial Request</div>
+                <h1 style="
+                  margin:0 0 5px;
+                  font-size:24px;
+                  font-weight:700;
+                  color:#0d1117;
+                  letter-spacing:-0.035em;
+                  line-height:1.2;
+                ">Your request has been sent</h1>
+                <p style="
+                  margin:0;
+                  font-size:13px;
+                  color:#6b7280;
+                  line-height:1.55;
+                ">
+                  Dear ${escapeHtml(recipientName)}, your request has been successfully submitted and shared with the AfterMarket team.
+                </p>
+              </td>
+            </tr>
+
+            <tr>
+              <td>
+                ${sectionCard({
+                  icon: 'S',
+                  title: 'Request Summary',
+                  subtitle: 'Reference details sent to the internal workflow',
+                  rows: `
+                    ${twoColumnRow('Product Reference', ssr.productReference, 'Reference Designation', ssr.referenceDesignation)}
+                    ${twoColumnRow('Product Family', ssr.productFamily, 'Customer Name', ssr.customerName || '-')}
+                    ${twoColumnRow('Plant', ssr.plant, 'Quantity Requested', ssr.quantityRequested)}
+                    ${twoColumnRow('Date Requested', formatDate(ssr.dateRequested), 'KAM', getKamName(ssr))}
+                    ${fullWidthRow('KAM Note', ssr.kamNote || '-')}
+                  `,
+                  fullWidth: true,
+                })}
+              </td>
+            </tr>
+
+            <tr>
+              <td style="
+                padding:14px 20px;
+                border-top:1px solid #e5e7eb;
+                background:#fafafa;
+                border-radius:14px;
+              ">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                  <tr>
+                    <td style="
+                      font-size:13px;
+                      color:#6b7280;
+                      line-height:1.7;
+                    ">
+                      This is an automatic confirmation email. No further action is required from you at this stage.
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
+`
+
+const buildSubject = () => 'AfterMarket Demand Analysis: Small Series (4M)'
+const buildStsSubject = () => 'AfterMarket Demand Analysis : Small Series'
 const buildStsCompletionSubject = (ssr) => `[AVOCarbon] STS Form Submitted - ${ssr.productReference}`
+const buildKamConfirmationSubject = (ssr) => `AfterMarket Demand Analysis: Request sent - ${ssr.productReference}`
+
+const getKamRecipient = (ssr) => {
+  const email = normalizeEmail(
+    ssr?.kam?.email ||
+    ssr?.salesRep?.email ||
+    ssr?.sales_rep?.email ||
+    ssr?.SalesRep?.email,
+  )
+
+  if (!email) return null
+
+  return {
+    email,
+    name: getKamName(ssr) || 'Team',
+  }
+}
 
 const getRecipientAction = ({ recipientKey, ssrId, frontendBaseUrl }) => {
-  if (recipientKey === 'fadwa') {
+  if (recipientKey === 'site' || recipientKey === 'fadwa') {
     const token = generateFourMAccessToken(ssrId)
 
     return {
@@ -539,35 +634,50 @@ const getRecipientAction = ({ recipientKey, ssrId, frontendBaseUrl }) => {
 
 const sendNewSmallSerialRequestEmails = async ({ ssr }) => {
   const frontendBaseUrl = process.env.FRONTEND_URL || 'http://localhost:5173'
-  const { fourMRecipient, stsRecipients } = getInitialWorkflowRecipients()
+  const { siteRecipients, stsRecipients } = await getInitialWorkflowRecipients()
+  const siteRecipientEmails = siteRecipients.map((recipient) => recipient.email)
+  const siteRecipientNames = siteRecipients.map((recipient) => recipient.name).join(' & ') || 'Team'
+  const stsRecipientEmails = stsRecipients.map((recipient) => recipient.email)
+  const stsRecipientNames = stsRecipients.map((recipient) => recipient.name).join(' & ') || 'Team'
 
-  if (!fourMRecipient && stsRecipients.length === 0) {
-    console.warn('No SSR initial workflow email recipients configured in .env')
+  if (siteRecipients.length === 0 && stsRecipients.length === 0) {
+    console.warn('No SSR initial workflow email recipients configured')
     return
   }
 
-  if (fourMRecipient) {
+  if (siteRecipients.length > 0) {
     const action = getRecipientAction({
-      recipientKey: fourMRecipient.key,
+      recipientKey: 'site',
       ssrId: ssr.id,
       frontendBaseUrl,
     })
 
     await sendMailOnce({
-      dedupeKey: ['new-ssr', normalizeEmail(fourMRecipient.email), ssr.id, action?.actionUrl || ''].join('|'),
+      dedupeKey: ['new-ssr', siteRecipientEmails.slice().sort().join(','), ssr.id, action?.actionUrl || ''].join('|'),
       mailOptions: {
         from: process.env.SMTP_FROM || process.env.SMTP_USER,
-        to: fourMRecipient.email,
-        subject: buildSubject(ssr),
+        to: siteRecipientEmails.join(','),
+        subject: buildSubject(),
         html: buildHtml({
-          recipientName: fourMRecipient.name,
+          recipientName: siteRecipientNames,
           ssr,
           action,
+          introHtml: `
+                <p style="
+                  margin:16px 0 0;
+                  font-size:13px;
+                  color:#6b7280;
+                  line-height:1.55;
+                ">
+                  Dear Team,<br />
+                  Please find all the details below. Could you kindly do the necessary ans submit an offer for the following reference: ${escapeHtml(ssr.productReference || '-')}
+                </p>
+          `,
         }),
       },
     })
   } else {
-    console.warn('Fadwa email recipient is not configured in .env')
+    console.warn('No users with role "site" are configured for 4M workflow emails')
   }
 
   if (stsRecipients.length > 0) {
@@ -579,24 +689,57 @@ const sendNewSmallSerialRequestEmails = async ({ ssr }) => {
     }
 
     await sendMailOnce({
-      dedupeKey: ['new-ssr', stsRecipients.join(','), ssr.id, action.actionUrl].join('|'),
+      dedupeKey: ['new-ssr', stsRecipientEmails.slice().sort().join(','), ssr.id, action.actionUrl].join('|'),
       mailOptions: {
         from: process.env.SMTP_FROM || process.env.SMTP_USER,
-        to: stsRecipients.join(','),
-        subject: buildSubject(ssr),
+        to: stsRecipientEmails.join(','),
+        subject: buildStsSubject(),
         html: buildHtml({
-          recipientName: [process.env.HAMDI_NAME || 'Hamdi', process.env.AZIZA_NAME || 'Aziza'].join(' & '),
+          recipientName: stsRecipientNames,
           ssr,
           action,
+          introHtml: `
+                <p style="
+                  margin:16px 0 0;
+                  font-size:13px;
+                  color:#6b7280;
+                  line-height:1.55;
+                ">
+                  Dear Team,<br />
+                  Please find all the details below. Could you kindly do the necessary ans submit an offer for the following reference: ${escapeHtml(ssr.productReference || '-')}
+                </p>
+          `,
         }),
       },
     })
   } else {
-    console.warn('Hamdi/Aziza email recipients are not configured in .env')
+    console.warn('No users with role "sts" are configured for SSR workflow emails')
   }
 }
 
-const buildStsCompletionHtml = ({ recipientName, ssr, fourMValidation, stsForm, actionUrl }) => `
+const sendKamRequestConfirmationEmail = async ({ ssr }) => {
+  const recipient = getKamRecipient(ssr)
+
+  if (!recipient?.email) {
+    console.warn(`No KAM email configured for SSR ${ssr?.id || '-'}`)
+    return
+  }
+
+  await sendMailOnce({
+    dedupeKey: ['kam-request-confirmation', normalizeEmail(recipient.email), ssr.id].join('|'),
+    mailOptions: {
+      from: process.env.SMTP_FROM || process.env.SMTP_USER,
+      to: recipient.email,
+      subject: buildKamConfirmationSubject(ssr),
+      html: buildKamConfirmationHtml({
+        recipientName: recipient.name,
+        ssr,
+      }),
+    },
+  })
+}
+
+const buildStsCompletionHtml = ({ recipientName, ssr, fourMValidation, stsForm, actionUrl, formLinks }) => `
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -640,6 +783,32 @@ const buildStsCompletionHtml = ({ recipientName, ssr, fourMValidation, stsForm, 
                 ">
                   The STS form has been submitted for ${escapeHtml(recipientName)}. Please fill in the Product inventory validation form.
                 </p>
+                <p style="
+                  margin:16px 0 0;
+                  font-size:13px;
+                  color:#6b7280;
+                  line-height:1.55;
+                  white-space:pre-line;
+                ">
+                  Dear Site,
+                  I am pleased to inform you that the work related to STS haw now been completed. Below, you will find the form for product inventory validation. Once you submit this form, you will immedoately (within a few seconds) receivr the form for raw material inventory verification.
+                  If a specific case study is requires, a third form will be provided to you.
+                </p>
+                <div style="
+                  margin:16px 0 0;
+                  font-size:13px;
+                  color:#6b7280;
+                  line-height:1.55;
+                ">
+                  <p style="margin:0 0 8px;">If necessary:</p>
+                  <p style="margin:0 0 8px;">In case of any erros, verification, or corrections, or if you need to access the form again, you can find the forms below:</p>
+                  ${buildInlineLink('4M Validaion Form', formLinks.fourM)}
+                  ${buildInlineLink('Product Inventory Validation Form', formLinks.productInventory)}
+                  ${buildInlineLink('Raw Material Inventory Validation Form', formLinks.rmAvailability)}
+                  ${buildInlineLink('Specific RM Study Form', formLinks.specificRmStudy)}
+                  <p style="margin:8px 0 0;">Should you have any questions or need assistance, feel free to reach out.</p>
+                  <p style="margin:8px 0 0;">Best regards,</p>
+                </div>
               </td>
             </tr>
 
@@ -715,28 +884,37 @@ const buildStsCompletionHtml = ({ recipientName, ssr, fourMValidation, stsForm, 
 </html>
 `
 
-const sendStsFormSubmittedEmailToFadwa = async ({ ssr, fourMValidation, stsForm }) => {
-  const recipient = getRecipientByKey('fadwa')
+const sendStsFormSubmittedEmailToSiteRecipients = async ({ ssr, fourMValidation, stsForm }) => {
+  const recipients = await getUserRecipientsByRole('site')
   const frontendBaseUrl = process.env.FRONTEND_URL || 'http://localhost:5173'
   const accessToken = generateStsAccessToken(ssr.id)
+  const fourMAccessToken = generateFourMAccessToken(ssr.id)
+  const recipientEmails = recipients.map((recipient) => recipient.email)
+  const recipientNames = recipients.map((recipient) => recipient.name).join(' & ') || 'Team'
 
-  if (!recipient?.email) {
-    console.warn('Fadwa email recipient is not configured in .env')
+  if (recipientEmails.length === 0) {
+    console.warn('No users with role "site" are configured for Product Inventory emails')
     return
   }
 
   await sendMailOnce({
-    dedupeKey: ['sts-submitted', normalizeEmail(recipient.email), ssr.id, accessToken].join('|'),
+    dedupeKey: ['sts-submitted', recipientEmails.slice().sort().join(','), ssr.id, accessToken].join('|'),
     mailOptions: {
       from: process.env.SMTP_FROM || process.env.SMTP_USER,
-      to: recipient.email,
-      subject: buildStsCompletionSubject(ssr),
+      to: recipientEmails.join(','),
+      subject: 'AfterMarket Demand Analysis:  Small Series',
       html: buildStsCompletionHtml({
-        recipientName: recipient.name,
+        recipientName: recipientNames,
         ssr,
         fourMValidation,
         stsForm,
         actionUrl: `${frontendBaseUrl}/product-inventory-validation/${accessToken}`,
+        formLinks: {
+          fourM: `${frontendBaseUrl}/4M-validation/${fourMAccessToken}`,
+          productInventory: `${frontendBaseUrl}/product-inventory-validation/${accessToken}`,
+          rmAvailability: `${frontendBaseUrl}/rm-availability-validation/${accessToken}`,
+          specificRmStudy: `${frontendBaseUrl}/specific-rm-study-form/${accessToken}`,
+        },
       }),
     },
   })
@@ -744,7 +922,8 @@ const sendStsFormSubmittedEmailToFadwa = async ({ ssr, fourMValidation, stsForm 
 
 module.exports = {
   sendNewSmallSerialRequestEmails,
-  sendStsFormSubmittedEmailToFadwa,
+  sendKamRequestConfirmationEmail,
+  sendStsFormSubmittedEmailToSiteRecipients,
   generateFourMAccessToken,
   generateStsAccessToken,
   verifyFourMAccessToken,

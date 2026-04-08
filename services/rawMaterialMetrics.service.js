@@ -190,19 +190,6 @@ const getRawMaterialMetricsByInternalReferences = async (internalReferences = []
       replacements: { internalReferences: normalizedReferences },
       type: QueryTypes.SELECT,
     })
-
-    console.log('DW raw material metrics query result:', {
-      requestedReferences: normalizedReferences,
-      rowCount: rows.length,
-      rows: rows.map((row) => ({
-        internalReference: row.internalReference,
-        lastInventoryQuantity: row.lastInventoryQuantity,
-        lastInventoryDate: row.lastInventoryDate,
-        lastMovementPrice: row.lastMovementPrice,
-        lastMovementDate: row.lastMovementDate,
-      })),
-    })
-
     const metricsByReference = new Map(
       normalizedReferences.map((reference) => [reference, { ...EMPTY_METRICS }])
     )
@@ -258,18 +245,6 @@ const getProductMetricsByInternalReferences = async (internalReferences = []) =>
     const rows = await sequelize.query(PRODUCT_METRICS_QUERY, {
       replacements: { internalReferences: normalizedReferences },
       type: QueryTypes.SELECT,
-    })
-
-    console.log('DW product inventory and sales query result:', {
-      requestedReferences: normalizedReferences,
-      rowCount: rows.length,
-      rows: rows.map((row) => ({
-        internalReference: row.internalReference,
-        lastInventoryQuantity: row.lastInventoryQuantity,
-        lastInventoryDate: row.lastInventoryDate,
-        lastSellingPrice: row.lastSellingPrice,
-        lastSellingDate: row.lastSellingDate,
-      })),
     })
 
     const metricsByReference = new Map(

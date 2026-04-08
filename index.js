@@ -52,7 +52,11 @@ async function startServer() {
     console.log("PostgreSQL connected successfully");
 
     await sequelize.query('ALTER TABLE IF EXISTS raw_materials ADD COLUMN IF NOT EXISTS status BOOLEAN DEFAULT TRUE');
+    await sequelize.query('ALTER TABLE IF EXISTS user_auth ADD COLUMN IF NOT EXISTS role VARCHAR(50)');
     await sequelize.sync();
+    await sequelize.query("UPDATE user_auth SET role = 'user' WHERE role IS NULL OR TRIM(role) = ''");
+    await sequelize.query("ALTER TABLE IF EXISTS user_auth ALTER COLUMN role SET DEFAULT 'user'");
+    await sequelize.query('ALTER TABLE IF EXISTS user_auth ALTER COLUMN role SET NOT NULL');
     console.log("Models synchronized successfully");
 
     startWorkflowReminderScheduler();

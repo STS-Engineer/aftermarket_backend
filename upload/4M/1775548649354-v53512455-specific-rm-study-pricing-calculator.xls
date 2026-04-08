@@ -1,0 +1,487 @@
+<?xml version="1.0"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:o="urn:schemas-microsoft-com:office:office"
+ xmlns:x="urn:schemas-microsoft-com:office:excel"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:html="http://www.w3.org/TR/REC-html40">
+  <DocumentProperties xmlns="urn:schemas-microsoft-com:office:office">
+    <Title>Pricing Calculator</Title>
+  </DocumentProperties>
+  <ExcelWorkbook xmlns="urn:schemas-microsoft-com:office:excel">
+    <ProtectStructure>False</ProtectStructure>
+    <ProtectWindows>False</ProtectWindows>
+  </ExcelWorkbook>
+  <Styles>
+    <Style ss:ID="Default" ss:Name="Normal">
+      <Alignment ss:Vertical="Center" ss:WrapText="1"/>
+      <Borders>
+        <Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/>
+        <Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/>
+        <Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/>
+        <Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/>
+      </Borders>
+      <Font ss:FontName="Calibri" ss:Size="10"/>
+      <Interior ss:Color="#FFFFFF" ss:Pattern="Solid"/>
+    </Style>
+    <Style ss:ID="Title">
+      <Alignment ss:Horizontal="Center" ss:Vertical="Center"/>
+      <Font ss:FontName="Calibri" ss:Size="16" ss:Bold="1"/>
+      <Interior ss:Color="#F97316" ss:Pattern="Solid"/>
+    </Style>
+    <Style ss:ID="Section">
+      <Font ss:Bold="1"/>
+      <Interior ss:Color="#FCE7D6" ss:Pattern="Solid"/>
+    </Style>
+    <Style ss:ID="Header">
+      <Font ss:Bold="1" ss:Color="#FFFFFF"/>
+      <Interior ss:Color="#111827" ss:Pattern="Solid"/>
+    </Style>
+    <Style ss:ID="Text">
+      <Alignment ss:Vertical="Center" ss:WrapText="1"/>
+    </Style>
+    <Style ss:ID="TextStrong">
+      <Alignment ss:Vertical="Center" ss:WrapText="1"/>
+      <Font ss:Bold="1"/>
+    </Style>
+    <Style ss:ID="Number">
+      <NumberFormat ss:Format="0.00"/>
+    </Style>
+    <Style ss:ID="NumberStrong">
+      <Font ss:Bold="1"/>
+      <NumberFormat ss:Format="0.00"/>
+    </Style>
+    <Style ss:ID="Currency">
+      <NumberFormat ss:Format="0.00"/>
+    </Style>
+    <Style ss:ID="CurrencyStrong">
+      <Font ss:Bold="1"/>
+      <Interior ss:Color="#FEF3C7" ss:Pattern="Solid"/>
+      <NumberFormat ss:Format="0.00"/>
+    </Style>
+  </Styles>
+  <Worksheet ss:Name="pricing calculator">
+    <Table ss:ExpandedColumnCount="36" ss:ExpandedRowCount="18" x:FullColumns="1" x:FullRows="1">
+      <Column ss:AutoFitWidth="0" ss:Width="140"/>
+      <Column ss:AutoFitWidth="0" ss:Width="240"/>
+      <Column ss:AutoFitWidth="0" ss:Width="120"/>
+      <Column ss:AutoFitWidth="0" ss:Width="120"/>
+      <Column ss:AutoFitWidth="0" ss:Width="120"/>
+      <Column ss:AutoFitWidth="0" ss:Width="160"/>
+      <Column ss:AutoFitWidth="0" ss:Width="100"/>
+      <Column ss:AutoFitWidth="0" ss:Width="110"/>
+      <Column ss:AutoFitWidth="0" ss:Width="110"/>
+      <Column ss:AutoFitWidth="0" ss:Width="110"/>
+      <Column ss:AutoFitWidth="0" ss:Width="110"/>
+      <Column ss:AutoFitWidth="0" ss:Width="130"/>
+      <Column ss:AutoFitWidth="0" ss:Width="170"/>
+      <Column ss:AutoFitWidth="0" ss:Width="170"/>
+      <Column ss:AutoFitWidth="0" ss:Width="90"/>
+      <Column ss:AutoFitWidth="0" ss:Width="100"/>
+      <Column ss:AutoFitWidth="0" ss:Width="85"/>
+      <Column ss:AutoFitWidth="0" ss:Width="150"/>
+      <Column ss:AutoFitWidth="0" ss:Width="100"/>
+      <Column ss:AutoFitWidth="0" ss:Width="85"/>
+      <Column ss:AutoFitWidth="0" ss:Width="150"/>
+      <Column ss:AutoFitWidth="0" ss:Width="100"/>
+      <Column ss:AutoFitWidth="0" ss:Width="85"/>
+      <Column ss:AutoFitWidth="0" ss:Width="150"/>
+      <Column ss:AutoFitWidth="0" ss:Width="100"/>
+      <Column ss:AutoFitWidth="0" ss:Width="100"/>
+      <Column ss:AutoFitWidth="0" ss:Width="150"/>
+      <Column ss:AutoFitWidth="0" ss:Width="100"/>
+      <Column ss:AutoFitWidth="0" ss:Width="150"/>
+      <Column ss:AutoFitWidth="0" ss:Width="110"/>
+      <Column ss:AutoFitWidth="0" ss:Width="110"/>
+      <Column ss:AutoFitWidth="0" ss:Width="110"/>
+      <Column ss:AutoFitWidth="0" ss:Width="110"/>
+      <Column ss:AutoFitWidth="0" ss:Width="110"/>
+      <Column ss:AutoFitWidth="0" ss:Width="110"/>
+      <Column ss:AutoFitWidth="0" ss:Width="110"/>
+
+      <Row ss:Height="28">
+        <Cell ss:StyleID="Title" ss:MergeAcross="35"><Data ss:Type="String">Pricing Calculator</Data></Cell>
+      </Row>
+      <Row ss:Height="22">
+        <Cell ss:StyleID="Section"><Data ss:Type="String">Group Title</Data></Cell>
+      </Row>
+      <Row ss:Height="24">
+        <Cell ss:StyleID="Header"><Data ss:Type="String">Name</Data></Cell>
+        <Cell ss:StyleID="Header"><Data ss:Type="String">Subitems</Data></Cell>
+        <Cell ss:StyleID="Header"><Data ss:Type="String">Item ID</Data></Cell>
+        <Cell ss:StyleID="Header"><Data ss:Type="String">KAM</Data></Cell>
+        <Cell ss:StyleID="Header"><Data ss:Type="String">AVO Plant</Data></Cell>
+        <Cell ss:StyleID="Header"><Data ss:Type="String">Product Description</Data></Cell>
+        <Cell ss:StyleID="Header"><Data ss:Type="String">Quantity Requested</Data></Cell>
+        <Cell ss:StyleID="Header"><Data ss:Type="String">Estimated Date - Start</Data></Cell>
+        <Cell ss:StyleID="Header"><Data ss:Type="String">Estimated Date - End</Data></Cell>
+        <Cell ss:StyleID="Header"><Data ss:Type="String">Product Current Stock</Data></Cell>
+        <Cell ss:StyleID="Header"><Data ss:Type="String">Inventory_Date_FG</Data></Cell>
+        <Cell ss:StyleID="Header"><Data ss:Type="String">Product Stock Available for Sale</Data></Cell>
+        <Cell ss:StyleID="Header"><Data ss:Type="String">RM Availability Approval Documentations</Data></Cell>
+        <Cell ss:StyleID="Header"><Data ss:Type="String">Product Availability Approval Documentations</Data></Cell>
+        <Cell ss:StyleID="Header"><Data ss:Type="String">Last Selling price</Data></Cell>
+        <Cell ss:StyleID="Header"><Data ss:Type="String">Last Selling Date</Data></Cell>
+        <Cell ss:StyleID="Header"><Data ss:Type="String">Machine</Data></Cell>
+        <Cell ss:StyleID="Header"><Data ss:Type="String">Explanaition (machine)</Data></Cell>
+        <Cell ss:StyleID="Header"><Data ss:Type="String">Due Date (Machine)</Data></Cell>
+        <Cell ss:StyleID="Header"><Data ss:Type="String">Method</Data></Cell>
+        <Cell ss:StyleID="Header"><Data ss:Type="String">Explanaition (Method)</Data></Cell>
+        <Cell ss:StyleID="Header"><Data ss:Type="String">Due Date (Method)</Data></Cell>
+        <Cell ss:StyleID="Header"><Data ss:Type="String">Labor</Data></Cell>
+        <Cell ss:StyleID="Header"><Data ss:Type="String">Explanaition (Labor)</Data></Cell>
+        <Cell ss:StyleID="Header"><Data ss:Type="String">Due Date (Labor)</Data></Cell>
+        <Cell ss:StyleID="Header"><Data ss:Type="String">Environnement</Data></Cell>
+        <Cell ss:StyleID="Header"><Data ss:Type="String">Explanaition (Environnement)</Data></Cell>
+        <Cell ss:StyleID="Header"><Data ss:Type="String">Due Date (Environnement)</Data></Cell>
+        <Cell ss:StyleID="Header"><Data ss:Type="String">4M Approval Documentation</Data></Cell>
+        <Cell ss:StyleID="Header"><Data ss:Type="String">Production to launch</Data></Cell>
+        <Cell ss:StyleID="Header"><Data ss:Type="String">Production lead time</Data></Cell>
+        <Cell ss:StyleID="Header"><Data ss:Type="String">Longest component lead time in week</Data></Cell>
+        <Cell ss:StyleID="Header"><Data ss:Type="String">Production capacity per week</Data></Cell>
+        <Cell ss:StyleID="Header"><Data ss:Type="String">Total lead time</Data></Cell>
+        <Cell ss:StyleID="Header"><Data ss:Type="String">Sum of Additional Purshase cost</Data></Cell>
+        <Cell ss:StyleID="Header"><Data ss:Type="String">Minimum price to offer</Data></Cell>
+      </Row>
+      
+    <Row ss:Height="22">
+      <Cell ss:StyleID="TextStrong"><Data ss:Type="String">V53512455</Data></Cell>
+      <Cell ss:StyleID="Text"><Data ss:Type="String">A04420100, A04499897, A04499898, A04499899, A04499990, A59920617, A59920637, A59950252, A60101024, A60101351, N335600</Data></Cell>
+      <Cell ss:StyleID="Number"><Data ss:Type="Number">37</Data></Cell>
+      <Cell ss:StyleID="Text"><Data ss:Type="String">AUSTIN YUAN</Data></Cell>
+      <Cell ss:StyleID="Text"><Data ss:Type="String">Tunisia Plant</Data></Cell>
+      <Cell ss:StyleID="Text"><Data ss:Type="String">Faisceauxx</Data></Cell>
+      <Cell ss:StyleID="NumberStrong"><Data ss:Type="Number">600</Data></Cell>
+      <Cell ss:StyleID="Text"><Data ss:Type="String">2026-05-20</Data></Cell>
+      <Cell ss:StyleID="Text"/>
+      <Cell ss:StyleID="Number"><Data ss:Type="Number">700</Data></Cell>
+      <Cell ss:StyleID="Text"><Data ss:Type="String">2026-04-03</Data></Cell>
+      <Cell ss:StyleID="Text"><Data ss:Type="String">200</Data></Cell>
+      <Cell ss:StyleID="Text"><Data ss:Type="String">upload/rm-availability-validation/1775206069529-avocarbon_database_documentation.docx</Data></Cell>
+      <Cell ss:StyleID="Text"><Data ss:Type="String">upload/product-inventory-validation/1775205948116-avocarbon_database_documentation.docx</Data></Cell>
+      <Cell ss:StyleID="Currency"><Data ss:Type="Number">28.51</Data></Cell>
+      <Cell ss:StyleID="Text"><Data ss:Type="String">2026-02-18</Data></Cell>
+      <Cell ss:StyleID="Text"><Data ss:Type="String">OK</Data></Cell>
+      <Cell ss:StyleID="Text"/>
+      <Cell ss:StyleID="Text"/>
+      <Cell ss:StyleID="Text"><Data ss:Type="String">OK</Data></Cell>
+      <Cell ss:StyleID="Text"/>
+      <Cell ss:StyleID="Text"/>
+      <Cell ss:StyleID="Text"><Data ss:Type="String">OK</Data></Cell>
+      <Cell ss:StyleID="Text"/>
+      <Cell ss:StyleID="Text"/>
+      <Cell ss:StyleID="Text"><Data ss:Type="String">OK</Data></Cell>
+      <Cell ss:StyleID="Text"/>
+      <Cell ss:StyleID="Text"/>
+      <Cell ss:StyleID="Text"><Data ss:Type="String">upload/4M/1775205213953-avocarbon_database_documentation.docx</Data></Cell>
+      <Cell ss:StyleID="Number" ss:Formula="=MAX(R4C7-R4C10,0)"><Data ss:Type="Number">0</Data></Cell>
+      <Cell ss:StyleID="Number" ss:Formula="=IF(R4C33&gt;0,ROUNDUP(R4C30/R4C33,0),0)"><Data ss:Type="Number">0</Data></Cell>
+      <Cell ss:StyleID="Number" ss:Formula="=IF(COUNTA(R7C11:R17C11)&gt;0,MAX(R7C11:R17C11),0)"><Data ss:Type="Number">0</Data></Cell>
+      <Cell ss:StyleID="NumberStrong"><Data ss:Type="Number">100</Data></Cell>
+      <Cell ss:StyleID="Number" ss:Formula="=R4C31+R4C32"><Data ss:Type="Number">0</Data></Cell>
+      <Cell ss:StyleID="CurrencyStrong" ss:Formula="=SUM(R7C20:R17C20)"><Data ss:Type="Number">0</Data></Cell>
+      <Cell ss:StyleID="CurrencyStrong" ss:Formula="=IF(R4C7&gt;0,R4C15+(R4C35/R4C7),R4C15)"><Data ss:Type="Number">0</Data></Cell>
+    </Row>
+  
+      <Row ss:Height="18"/>
+      <Row ss:Height="24">
+        <Cell ss:StyleID="Header"><Data ss:Type="String">Subitems</Data></Cell>
+        <Cell ss:StyleID="Header"><Data ss:Type="String">Name</Data></Cell>
+        <Cell ss:StyleID="Header"><Data ss:Type="String">Reference Description</Data></Cell>
+        <Cell ss:StyleID="Header"><Data ss:Type="String">Quantity per Unit (Q,lien)</Data></Cell>
+        <Cell ss:StyleID="Header"><Data ss:Type="String">Total requirement</Data></Cell>
+        <Cell ss:StyleID="Header"><Data ss:Type="String">RM Current Stock</Data></Cell>
+        <Cell ss:StyleID="Header"><Data ss:Type="String">Inventory_Date_RM</Data></Cell>
+        <Cell ss:StyleID="Header"><Data ss:Type="String">RM Stock Available for Prod</Data></Cell>
+        <Cell ss:StyleID="Header"><Data ss:Type="String">Total Needs</Data></Cell>
+        <Cell ss:StyleID="Header"><Data ss:Type="String">Minimum Order Quantity</Data></Cell>
+        <Cell ss:StyleID="Header"><Data ss:Type="String">Lead time (week)</Data></Cell>
+        <Cell ss:StyleID="Header"><Data ss:Type="String">Current Purchase Price</Data></Cell>
+        <Cell ss:StyleID="Header"><Data ss:Type="String">Last Purchase Price</Data></Cell>
+        <Cell ss:StyleID="Header"><Data ss:Type="String">Last Purchasing Date</Data></Cell>
+        <Cell ss:StyleID="Header"><Data ss:Type="String">X MOQ to Order</Data></Cell>
+        <Cell ss:StyleID="Header"><Data ss:Type="String">Quantity Under Order</Data></Cell>
+        <Cell ss:StyleID="Header"><Data ss:Type="String">Excess Material</Data></Cell>
+        <Cell ss:StyleID="Header"><Data ss:Type="String">Cost of Excess material</Data></Cell>
+        <Cell ss:StyleID="Header"><Data ss:Type="String">Additional Purchase Cost</Data></Cell>
+        <Cell ss:StyleID="Header"><Data ss:Type="String">Total Additional Cost</Data></Cell>
+        <Cell ss:StyleID="Header"><Data ss:Type="String">Need study case</Data></Cell>
+      </Row>
+      
+      <Row ss:Height="20">
+        <Cell ss:StyleID="Text"/>
+        <Cell ss:StyleID="TextStrong"><Data ss:Type="String">A04420100</Data></Cell>
+        <Cell ss:StyleID="Text"><Data ss:Type="String">CABLE 1MM2 CL1 NOIR IR</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">0.345</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">138</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">6760.754</Data></Cell>
+        <Cell ss:StyleID="Text"><Data ss:Type="String">2026-03-31</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">20</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">118</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">27000</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">7</Data></Cell>
+        <Cell ss:StyleID="Currency"><Data ss:Type="Number">0.27</Data></Cell>
+        <Cell ss:StyleID="Currency"><Data ss:Type="Number">0.09893</Data></Cell>
+        <Cell ss:StyleID="Text"><Data ss:Type="String">2026-03-26</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">1</Data></Cell>
+        <Cell ss:StyleID="Number" ss:Formula="=IF(R7C10*R7C15&lt;R7C9,R7C9,R7C10*R7C15)"><Data ss:Type="Number">0</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">27000</Data></Cell>
+        <Cell ss:StyleID="Currency" ss:Formula="=R7C17*R7C12"><Data ss:Type="Number">0</Data></Cell>
+        <Cell ss:StyleID="Currency" ss:Formula="=(R7C12-R7C13)*R7C9"><Data ss:Type="Number">0</Data></Cell>
+        <Cell ss:StyleID="CurrencyStrong" ss:Formula="=SUM(R7C18:R7C19)"><Data ss:Type="Number">0</Data></Cell>
+        <Cell ss:StyleID="Text"><Data ss:Type="String">yes</Data></Cell>
+      </Row>
+    
+      <Row ss:Height="20">
+        <Cell ss:StyleID="Text"/>
+        <Cell ss:StyleID="TextStrong"><Data ss:Type="String">A04499897</Data></Cell>
+        <Cell ss:StyleID="Text"><Data ss:Type="String">CABLE 1MM2 CL1 ROUGE IR</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">0.345</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">138</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">2980.797</Data></Cell>
+        <Cell ss:StyleID="Text"><Data ss:Type="String">2026-03-25</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">20</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">118</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">1000</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">29</Data></Cell>
+        <Cell ss:StyleID="Currency"><Data ss:Type="Number">0.629</Data></Cell>
+        <Cell ss:StyleID="Currency"><Data ss:Type="Number">0.0989</Data></Cell>
+        <Cell ss:StyleID="Text"><Data ss:Type="String">2026-01-22</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">2</Data></Cell>
+        <Cell ss:StyleID="Number" ss:Formula="=IF(R8C10*R8C15&lt;R8C9,R8C9,R8C10*R8C15)"><Data ss:Type="Number">0</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">2000</Data></Cell>
+        <Cell ss:StyleID="Currency" ss:Formula="=R8C17*R8C12"><Data ss:Type="Number">0</Data></Cell>
+        <Cell ss:StyleID="Currency" ss:Formula="=(R8C12-R8C13)*R8C9"><Data ss:Type="Number">0</Data></Cell>
+        <Cell ss:StyleID="CurrencyStrong" ss:Formula="=SUM(R8C18:R8C19)"><Data ss:Type="Number">0</Data></Cell>
+        <Cell ss:StyleID="Text"><Data ss:Type="String">yes</Data></Cell>
+      </Row>
+    
+      <Row ss:Height="20">
+        <Cell ss:StyleID="Text"/>
+        <Cell ss:StyleID="TextStrong"><Data ss:Type="String">A04499898</Data></Cell>
+        <Cell ss:StyleID="Text"><Data ss:Type="String">CABLE 1MM2 CL1 BLANC IR</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">0.345</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">138</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">7062.413</Data></Cell>
+        <Cell ss:StyleID="Text"><Data ss:Type="String">2026-03-25</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">20</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">118</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">10000</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">18</Data></Cell>
+        <Cell ss:StyleID="Currency"><Data ss:Type="Number">0.006</Data></Cell>
+        <Cell ss:StyleID="Currency"><Data ss:Type="Number">0.0936</Data></Cell>
+        <Cell ss:StyleID="Text"><Data ss:Type="String">2025-10-26</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">1</Data></Cell>
+        <Cell ss:StyleID="Number" ss:Formula="=IF(R9C10*R9C15&lt;R9C9,R9C9,R9C10*R9C15)"><Data ss:Type="Number">0</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">10000</Data></Cell>
+        <Cell ss:StyleID="Currency" ss:Formula="=R9C17*R9C12"><Data ss:Type="Number">0</Data></Cell>
+        <Cell ss:StyleID="Currency" ss:Formula="=(R9C12-R9C13)*R9C9"><Data ss:Type="Number">0</Data></Cell>
+        <Cell ss:StyleID="CurrencyStrong" ss:Formula="=SUM(R9C18:R9C19)"><Data ss:Type="Number">0</Data></Cell>
+        <Cell ss:StyleID="Text"><Data ss:Type="String">yes</Data></Cell>
+      </Row>
+    
+      <Row ss:Height="20">
+        <Cell ss:StyleID="Text"/>
+        <Cell ss:StyleID="TextStrong"><Data ss:Type="String">A04499899</Data></Cell>
+        <Cell ss:StyleID="Text"><Data ss:Type="String">CABLE 1MM2 CL1 BLEU IR</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">0.345</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">138</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">7363.32</Data></Cell>
+        <Cell ss:StyleID="Text"><Data ss:Type="String">2026-03-29</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">20</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">118</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">2200</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">18</Data></Cell>
+        <Cell ss:StyleID="Currency"><Data ss:Type="Number">0.037</Data></Cell>
+        <Cell ss:StyleID="Currency"><Data ss:Type="Number">0.09893</Data></Cell>
+        <Cell ss:StyleID="Text"><Data ss:Type="String">2026-03-26</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">5</Data></Cell>
+        <Cell ss:StyleID="Number" ss:Formula="=IF(R10C10*R10C15&lt;R10C9,R10C9,R10C10*R10C15)"><Data ss:Type="Number">0</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">11000</Data></Cell>
+        <Cell ss:StyleID="Currency" ss:Formula="=R10C17*R10C12"><Data ss:Type="Number">0</Data></Cell>
+        <Cell ss:StyleID="Currency" ss:Formula="=(R10C12-R10C13)*R10C9"><Data ss:Type="Number">0</Data></Cell>
+        <Cell ss:StyleID="CurrencyStrong" ss:Formula="=SUM(R10C18:R10C19)"><Data ss:Type="Number">0</Data></Cell>
+        <Cell ss:StyleID="Text"><Data ss:Type="String">yes</Data></Cell>
+      </Row>
+    
+      <Row ss:Height="20">
+        <Cell ss:StyleID="Text"/>
+        <Cell ss:StyleID="TextStrong"><Data ss:Type="String">A04499990</Data></Cell>
+        <Cell ss:StyleID="Text"><Data ss:Type="String">CABLE 1MM2 CL1 GRIS IR 19*0.25</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">0.345</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">138</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">3428.529</Data></Cell>
+        <Cell ss:StyleID="Text"><Data ss:Type="String">2026-03-25</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">20</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">118</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">25000</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">6</Data></Cell>
+        <Cell ss:StyleID="Currency"><Data ss:Type="Number">0.1198</Data></Cell>
+        <Cell ss:StyleID="Currency"><Data ss:Type="Number">0.0936</Data></Cell>
+        <Cell ss:StyleID="Text"><Data ss:Type="String">2025-12-24</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">1</Data></Cell>
+        <Cell ss:StyleID="Number" ss:Formula="=IF(R11C10*R11C15&lt;R11C9,R11C9,R11C10*R11C15)"><Data ss:Type="Number">0</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">25000</Data></Cell>
+        <Cell ss:StyleID="Currency" ss:Formula="=R11C17*R11C12"><Data ss:Type="Number">0</Data></Cell>
+        <Cell ss:StyleID="Currency" ss:Formula="=(R11C12-R11C13)*R11C9"><Data ss:Type="Number">0</Data></Cell>
+        <Cell ss:StyleID="CurrencyStrong" ss:Formula="=SUM(R11C18:R11C19)"><Data ss:Type="Number">0</Data></Cell>
+        <Cell ss:StyleID="Text"><Data ss:Type="String">yes</Data></Cell>
+      </Row>
+    
+      <Row ss:Height="20">
+        <Cell ss:StyleID="Text"/>
+        <Cell ss:StyleID="TextStrong"><Data ss:Type="String">A59920617</Data></Cell>
+        <Cell ss:StyleID="Text"><Data ss:Type="String">BOITIER 5V PL NO.MIC7701996143</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">1</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">400</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">21720</Data></Cell>
+        <Cell ss:StyleID="Text"><Data ss:Type="String">2023-04-23</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">20</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">380</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">10000</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">6</Data></Cell>
+        <Cell ss:StyleID="Currency"><Data ss:Type="Number">0.0225</Data></Cell>
+        <Cell ss:StyleID="Currency"/>
+        <Cell ss:StyleID="Text"/>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">2</Data></Cell>
+        <Cell ss:StyleID="Number" ss:Formula="=IF(R12C10*R12C15&lt;R12C9,R12C9,R12C10*R12C15)"><Data ss:Type="Number">0</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">20000</Data></Cell>
+        <Cell ss:StyleID="Currency" ss:Formula="=R12C17*R12C12"><Data ss:Type="Number">0</Data></Cell>
+        <Cell ss:StyleID="Currency" ss:Formula="=(R12C12-R12C13)*R12C9"><Data ss:Type="Number">0</Data></Cell>
+        <Cell ss:StyleID="CurrencyStrong" ss:Formula="=SUM(R12C18:R12C19)"><Data ss:Type="Number">0</Data></Cell>
+        <Cell ss:StyleID="Text"><Data ss:Type="String">yes</Data></Cell>
+      </Row>
+    
+      <Row ss:Height="20">
+        <Cell ss:StyleID="Text"/>
+        <Cell ss:StyleID="TextStrong"><Data ss:Type="String">A59920637</Data></Cell>
+        <Cell ss:StyleID="Text"><Data ss:Type="String">AGRAFE PAP 70-02 7703077210</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">1</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">400</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">24300</Data></Cell>
+        <Cell ss:StyleID="Text"><Data ss:Type="String">2026-02-18</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">20</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">380</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">2500</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">7</Data></Cell>
+        <Cell ss:StyleID="Currency"><Data ss:Type="Number">0.158</Data></Cell>
+        <Cell ss:StyleID="Currency"><Data ss:Type="Number">0.1198</Data></Cell>
+        <Cell ss:StyleID="Text"><Data ss:Type="String">2026-01-25</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">3</Data></Cell>
+        <Cell ss:StyleID="Number" ss:Formula="=IF(R13C10*R13C15&lt;R13C9,R13C9,R13C10*R13C15)"><Data ss:Type="Number">0</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">7500</Data></Cell>
+        <Cell ss:StyleID="Currency" ss:Formula="=R13C17*R13C12"><Data ss:Type="Number">0</Data></Cell>
+        <Cell ss:StyleID="Currency" ss:Formula="=(R13C12-R13C13)*R13C9"><Data ss:Type="Number">0</Data></Cell>
+        <Cell ss:StyleID="CurrencyStrong" ss:Formula="=SUM(R13C18:R13C19)"><Data ss:Type="Number">0</Data></Cell>
+        <Cell ss:StyleID="Text"><Data ss:Type="String">yes</Data></Cell>
+      </Row>
+    
+      <Row ss:Height="20">
+        <Cell ss:StyleID="Text"/>
+        <Cell ss:StyleID="TextStrong"><Data ss:Type="String">A59950252</Data></Cell>
+        <Cell ss:StyleID="Text"><Data ss:Type="String">JOINT 2.8 ��2.24A2.8 7703397223</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">5</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">2000</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">0.15</Data></Cell>
+        <Cell ss:StyleID="Text"><Data ss:Type="String">2025-11-28</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">20</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">1980</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">3000</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">8</Data></Cell>
+        <Cell ss:StyleID="Currency"><Data ss:Type="Number">0.259</Data></Cell>
+        <Cell ss:StyleID="Currency"><Data ss:Type="Number">0.006</Data></Cell>
+        <Cell ss:StyleID="Text"><Data ss:Type="String">2025-01-23</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">1</Data></Cell>
+        <Cell ss:StyleID="Number" ss:Formula="=IF(R14C10*R14C15&lt;R14C9,R14C9,R14C10*R14C15)"><Data ss:Type="Number">0</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">3000</Data></Cell>
+        <Cell ss:StyleID="Currency" ss:Formula="=R14C17*R14C12"><Data ss:Type="Number">0</Data></Cell>
+        <Cell ss:StyleID="Currency" ss:Formula="=(R14C12-R14C13)*R14C9"><Data ss:Type="Number">0</Data></Cell>
+        <Cell ss:StyleID="CurrencyStrong" ss:Formula="=SUM(R14C18:R14C19)"><Data ss:Type="Number">0</Data></Cell>
+        <Cell ss:StyleID="Text"><Data ss:Type="String">yes</Data></Cell>
+      </Row>
+    
+      <Row ss:Height="20">
+        <Cell ss:StyleID="Text"/>
+        <Cell ss:StyleID="TextStrong"><Data ss:Type="String">A60101024</Data></Cell>
+        <Cell ss:StyleID="Text"><Data ss:Type="String">CLIP 2.8 G2 ETM 125�� JUF</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">5</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">2000</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">877</Data></Cell>
+        <Cell ss:StyleID="Text"><Data ss:Type="String">2026-02-15</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">20</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">1980</Data></Cell>
+        <Cell ss:StyleID="Number"/>
+        <Cell ss:StyleID="Number"/>
+        <Cell ss:StyleID="Currency"><Data ss:Type="Number">0.037</Data></Cell>
+        <Cell ss:StyleID="Currency"><Data ss:Type="Number">0.037</Data></Cell>
+        <Cell ss:StyleID="Text"><Data ss:Type="String">2026-02-01</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">1</Data></Cell>
+        <Cell ss:StyleID="Number" ss:Formula="=IF(R15C10*R15C15&lt;R15C9,R15C9,R15C10*R15C15)"><Data ss:Type="Number">0</Data></Cell>
+        <Cell ss:StyleID="Number" ss:Formula="=IF(R15C16&lt;R15C9,0,R15C16-R15C9)"/>
+        <Cell ss:StyleID="Currency" ss:Formula="=R15C17*R15C12"><Data ss:Type="Number">0</Data></Cell>
+        <Cell ss:StyleID="Currency" ss:Formula="=(R15C12-R15C13)*R15C9"><Data ss:Type="Number">0</Data></Cell>
+        <Cell ss:StyleID="CurrencyStrong" ss:Formula="=SUM(R15C18:R15C19)"><Data ss:Type="Number">0</Data></Cell>
+        <Cell ss:StyleID="Text"><Data ss:Type="String">no</Data></Cell>
+      </Row>
+    
+      <Row ss:Height="20">
+        <Cell ss:StyleID="Text"/>
+        <Cell ss:StyleID="TextStrong"><Data ss:Type="String">A60101351</Data></Cell>
+        <Cell ss:StyleID="Text"><Data ss:Type="String">PORTE CLIPS SICMA 3 7703597144</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">1</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">400</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">274</Data></Cell>
+        <Cell ss:StyleID="Text"><Data ss:Type="String">2026-02-15</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">20</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">380</Data></Cell>
+        <Cell ss:StyleID="Number"/>
+        <Cell ss:StyleID="Number"/>
+        <Cell ss:StyleID="Currency"><Data ss:Type="Number">1.0243086172344689</Data></Cell>
+        <Cell ss:StyleID="Currency"><Data ss:Type="Number">1.0243086172344689</Data></Cell>
+        <Cell ss:StyleID="Text"><Data ss:Type="String">2025-12-24</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">1</Data></Cell>
+        <Cell ss:StyleID="Number" ss:Formula="=IF(R16C10*R16C15&lt;R16C9,R16C9,R16C10*R16C15)"><Data ss:Type="Number">0</Data></Cell>
+        <Cell ss:StyleID="Number" ss:Formula="=IF(R16C16&lt;R16C9,0,R16C16-R16C9)"/>
+        <Cell ss:StyleID="Currency" ss:Formula="=R16C17*R16C12"><Data ss:Type="Number">0</Data></Cell>
+        <Cell ss:StyleID="Currency" ss:Formula="=(R16C12-R16C13)*R16C9"><Data ss:Type="Number">0</Data></Cell>
+        <Cell ss:StyleID="CurrencyStrong" ss:Formula="=SUM(R16C18:R16C19)"><Data ss:Type="Number">0</Data></Cell>
+        <Cell ss:StyleID="Text"><Data ss:Type="String">no</Data></Cell>
+      </Row>
+    
+      <Row ss:Height="20">
+        <Cell ss:StyleID="Text"/>
+        <Cell ss:StyleID="TextStrong"><Data ss:Type="String">N335600</Data></Cell>
+        <Cell ss:StyleID="Text"><Data ss:Type="String">LANGUETTE MIC 3 (S1��/3��)</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">5</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">2000</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">7600</Data></Cell>
+        <Cell ss:StyleID="Text"><Data ss:Type="String">2021-12-19</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">20</Data></Cell>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">1980</Data></Cell>
+        <Cell ss:StyleID="Number"/>
+        <Cell ss:StyleID="Number"/>
+        <Cell ss:StyleID="Currency"/>
+        <Cell ss:StyleID="Currency"/>
+        <Cell ss:StyleID="Text"/>
+        <Cell ss:StyleID="Number"><Data ss:Type="Number">1</Data></Cell>
+        <Cell ss:StyleID="Number" ss:Formula="=IF(R17C10*R17C15&lt;R17C9,R17C9,R17C10*R17C15)"><Data ss:Type="Number">0</Data></Cell>
+        <Cell ss:StyleID="Number" ss:Formula="=IF(R17C16&lt;R17C9,0,R17C16-R17C9)"/>
+        <Cell ss:StyleID="Currency" ss:Formula="=R17C17*R17C12"><Data ss:Type="Number">0</Data></Cell>
+        <Cell ss:StyleID="Currency" ss:Formula="=(R17C12-R17C13)*R17C9"><Data ss:Type="Number">0</Data></Cell>
+        <Cell ss:StyleID="CurrencyStrong" ss:Formula="=SUM(R17C18:R17C19)"><Data ss:Type="Number">0</Data></Cell>
+        <Cell ss:StyleID="Text"><Data ss:Type="String">no</Data></Cell>
+      </Row>
+    
+      <Row ss:Height="22">
+        <Cell ss:StyleID="Text"/>
+        <Cell ss:StyleID="Section" ss:MergeAcross="17"><Data ss:Type="String">Totals</Data></Cell>
+        <Cell ss:StyleID="CurrencyStrong" ss:Formula="=SUM(R7C20:R17C20)"><Data ss:Type="Number">0</Data></Cell>
+        <Cell ss:StyleID="Text"/>
+      </Row>
+    </Table>
+    <WorksheetOptions xmlns="urn:schemas-microsoft-com:office:excel">
+      <ProtectObjects>False</ProtectObjects>
+      <ProtectScenarios>False</ProtectScenarios>
+    </WorksheetOptions>
+  </Worksheet>
+</Workbook>

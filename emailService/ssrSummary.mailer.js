@@ -2,19 +2,40 @@ const { transporter } = require('./mailTransport')
 const { XLSX_CONTENT_TYPE, buildPricingCalculatorBuffer } = require('./pricingCalculatorWorkbook')
 const { buildSubmissionSummaryPdfBuffer } = require('./summaryPdfBuilder')
 const { getSalesRepDisplayName } = require('../utils/salesRep')
+const { getUserRecipientsByRole } = require('../services/userRoleRecipient.service')
 
 const RECENT_EMAIL_WINDOW_MS = 5 * 60 * 1000
 const recentEmailKeys = new Map()
 
 const normalizeEmail = (value) => String(value || '').trim().toLowerCase()
 
-const getSummaryRecipients = () => {
+const getKamRecipient = (ssr) => {
+  const email = normalizeEmail(
+    ssr?.kam?.email
+    || ssr?.salesRep?.email
+    || ssr?.sales_rep?.email
+    || ssr?.SalesRep?.email,
+  )
+
+  if (!email) return null
+
+  return {
+    key: 'kam',
+    name: getKamName(ssr),
+    email,
+  }
+}
+
+const getSummaryRecipients = async (ssr) => {
   const seenEmails = new Set()
+  const kamRecipient = getKamRecipient(ssr)
+  const stsRecipients = await getUserRecipientsByRole('sts')
 
   return [
-    { key: 'hamdi', name: process.env.HAMDI_NAME || 'Hamdi', email: process.env.HAMDI_EMAIL },
-    { key: 'aziza', name: process.env.AZIZA_NAME || 'Aziza', email: process.env.AZIZA_EMAIL },
+    ...stsRecipients,
+    kamRecipient,
   ].filter((recipient) => {
+    if (!recipient) return false
     const normalizedEmail = normalizeEmail(recipient.email)
     if (!normalizedEmail || seenEmails.has(normalizedEmail)) return false
     seenEmails.add(normalizedEmail)
@@ -299,6 +320,10 @@ const buildSummaryHtml = ({ recipientName, submittedFormLabel, ssr }) => `
           <div style="font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#f97316;margin-bottom:8px;">Submission Summary</div>
           <h1 style="margin:0 0 10px;font-size:24px;line-height:1.2;">Final SSR summary ready</h1>
           <p style="margin:0 0 18px;font-size:14px;line-height:1.6;color:#4b5563;">
+            Dear ${escapeHtml(recipientName)}, I would like to inform you that the word has been successfully completed, and the offer price is ready.<br />
+            Please find all the details in attached file.
+          </p>
+          <p style="margin:0 0 18px;font-size:14px;line-height:1.6;color:#4b5563;">
             Hello ${escapeHtml(recipientName)}, the form <strong>${escapeHtml(submittedFormLabel)}</strong> has just been submitted and all required forms are now available for SSR <strong>${escapeHtml(ssr?.productReference || '-')}</strong>.
           </p>
           <p style="margin:0 0 18px;font-size:14px;line-height:1.6;color:#4b5563;">
@@ -330,10 +355,10 @@ const buildSummaryHtml = ({ recipientName, submittedFormLabel, ssr }) => `
 `
 
 const sendSubmissionSummaryEmails = async ({ ssr, submittedFormKey, submittedFormLabel }) => {
-  const recipients = getSummaryRecipients()
+  const recipients = await getSummaryRecipients(ssr)
 
   if (recipients.length === 0) {
-    console.warn('No summary recipients configured for Hamdi/Aziza in .env')
+    console.warn(`No summary recipients configured for SSR ${ssr?.id || '-'}`)
     return
   }
 
@@ -343,24 +368,24 @@ const sendSubmissionSummaryEmails = async ({ ssr, submittedFormKey, submittedFor
   }
 
   const attachments = buildAttachments(ssr, submittedFormKey, submittedFormLabel)
-  const subject = `[AVOCarbon] Final SSR Summary - ${ssr?.productReference || `SSR ${ssr?.id || ''}`}`.trim()
+  const subject = `Result for Ref: ${ssr?.productReference || `SSR ${ssr?.id || ''}`}`.trim()
+  const recipientEmails = recipients.map((recipient) => recipient.email)
+  const recipientName = recipients.length === 1 ? recipients[0].name : 'Team'
 
-  for (const recipient of recipients) {
-    await sendMailOnce({
-      dedupeKey: ['submission-summary', normalizeEmail(recipient.email), submittedFormKey, ssr?.id || ''].join('|'),
-      mailOptions: {
-        from: process.env.SMTP_FROM || process.env.SMTP_USER,
-        to: recipient.email,
-        subject,
-        html: buildSummaryHtml({
-          recipientName: recipient.name,
-          submittedFormLabel,
-          ssr,
-        }),
-        attachments,
-      },
-    })
-  }
+  await sendMailOnce({
+    dedupeKey: ['submission-summary', recipientEmails.sort().join(','), submittedFormKey, ssr?.id || ''].join('|'),
+    mailOptions: {
+      from: process.env.SMTP_FROM || process.env.SMTP_USER,
+      to: recipientEmails.join(','),
+      subject,
+      html: buildSummaryHtml({
+        recipientName,
+        submittedFormLabel,
+        ssr,
+      }),
+      attachments,
+    },
+  })
 }
 
 module.exports = {

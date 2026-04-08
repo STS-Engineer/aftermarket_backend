@@ -1,5 +1,4 @@
 const fourMValidationService = require('../services/fourMValidation.service')
-const ssrService = require('../services/ssr.service')
 const { verifyFourMAccessToken } = require('../emailService/ssr.mailer')
 
 const parseBoolean = (value) => {
@@ -28,7 +27,7 @@ const normalizeFourMField = (okValue, explanation, dueDate, label, missing) => {
   }
 }
 
-const buildValidationPayload = (body, file) => {
+const buildValidationPayload = (body) => {
   const {
     ssrId,
     productionCapacityPerWeek,
@@ -50,7 +49,6 @@ const buildValidationPayload = (body, file) => {
 
   if (!ssrId) missing.push('ssrId')
   if (!productionCapacityPerWeek) missing.push('productionCapacityPerWeek')
-  if (!file) missing.push('document')
 
   const machine = normalizeFourMField(machineOk, machineExplanation, machineDueDate, 'machine', missing)
   const method = normalizeFourMField(methodOk, methodExplanation, methodDueDate, 'method', missing)
@@ -84,14 +82,14 @@ const handleServiceError = (res, error, logPrefix) => {
   let status = 500
   if (error.message === 'SmallSerialRequest not found') status = 404
   if (error.message === '4M validation not found') status = 404
-  if (error.message === '4M validation already exists for this request') status = 409
+  if (error.message === 'document is required') status = 400
 
   return res.status(status).json({ message: error.message || 'Internal server error' })
 }
 
 const createFourMValidation = async (req, res) => {
   try {
-    const { missing, payload } = buildValidationPayload(req.body, req.file)
+    const { missing, payload } = buildValidationPayload(req.body)
 
     if (missing.length > 0) {
       return res.status(400).json({
@@ -103,7 +101,7 @@ const createFourMValidation = async (req, res) => {
       return res.status(400).json({ message: 'productionCapacityPerWeek must be at least 1' })
     }
 
-    const data = await fourMValidationService.createFourMValidation(payload, req.file)
+    const data = await fourMValidationService.saveFourMValidation(payload, req.file)
     return res.status(201).json(data)
   } catch (error) {
     return handleServiceError(res, error, 'createFourMValidation error:')
@@ -127,7 +125,7 @@ const getSmallSerialRequestForFourMByToken = async (req, res) => {
       return res.status(400).json({ message: 'Invalid access token' })
     }
 
-    const data = await ssrService.getSmallSerialRequestById(payload.ssrId)
+    const data = await fourMValidationService.getFourMAccessDataBySsrId(payload.ssrId)
     return res.status(200).json(data)
   } catch (error) {
     console.error('getSmallSerialRequestForFourMByToken error:', error)
