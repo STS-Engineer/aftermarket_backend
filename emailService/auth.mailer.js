@@ -64,7 +64,7 @@ const buildPasswordResetHtml = ({ recipientName, resetUrl }) => `
 `
 
 const sendPasswordResetEmail = async ({ email, recipientName, token }) => {
-  const frontendBaseUrl = process.env.FRONTEND_URL || 'http://localhost:5173'
+  const frontendBaseUrl = process.env.FRONTEND_URL 
   const resetUrl = `${frontendBaseUrl}/reset-password/${token}`
 
   await transporter.sendMail({

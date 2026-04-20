@@ -20,7 +20,7 @@ async function signIn(email, password) {
     throw err
   }
 
-  const userAuth = await UserAuth.findOne({ where: { member_id: member.id } })
+  const userAuth = await UserAuth.findOne({ where: { member_id: member.id } })   
 
   if (!userAuth) {
     const err = new Error('Ce compte ne dispose pas d\'un mot de passe local.')

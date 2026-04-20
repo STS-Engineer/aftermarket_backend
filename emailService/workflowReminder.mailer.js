@@ -45,7 +45,7 @@ const getRecipientGroup = async (formKey) => {
 }
 
 const getActionUrl = (formKey, ssrId) => {
-  const frontendBaseUrl = process.env.FRONTEND_URL || 'http://localhost:5173'
+  const frontendBaseUrl = process.env.FRONTEND_URL 
   const stsToken = generateStsAccessToken(ssrId)
 
   switch (formKey) {

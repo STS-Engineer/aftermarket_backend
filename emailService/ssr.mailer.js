@@ -633,7 +633,7 @@ const getRecipientAction = ({ recipientKey, ssrId, frontendBaseUrl }) => {
 }
 
 const sendNewSmallSerialRequestEmails = async ({ ssr }) => {
-  const frontendBaseUrl = process.env.FRONTEND_URL || 'http://localhost:5173'
+  const frontendBaseUrl = process.env.FRONTEND_URL 
   const { siteRecipients, stsRecipients } = await getInitialWorkflowRecipients()
   const siteRecipientEmails = siteRecipients.map((recipient) => recipient.email)
   const siteRecipientNames = siteRecipients.map((recipient) => recipient.name).join(' & ') || 'Team'
@@ -886,7 +886,7 @@ const buildStsCompletionHtml = ({ recipientName, ssr, fourMValidation, stsForm, 
 
 const sendStsFormSubmittedEmailToSiteRecipients = async ({ ssr, fourMValidation, stsForm }) => {
   const recipients = await getUserRecipientsByRole('site')
-  const frontendBaseUrl = process.env.FRONTEND_URL || 'http://localhost:5173'
+  const frontendBaseUrl = process.env.FRONTEND_URL 
   const accessToken = generateStsAccessToken(ssr.id)
   const fourMAccessToken = generateFourMAccessToken(ssr.id)
   const recipientEmails = recipients.map((recipient) => recipient.email)
