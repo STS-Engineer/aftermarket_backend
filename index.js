@@ -3,7 +3,6 @@ const express = require("express");
 const cors = require("cors");
 const path = require("path");
 const sequelize = require("./config/sequelize");
-require('./models/user.model');
 const ssrRoutes = require("./routes/ssr.route");
 const fourMValidationRoutes = require("./routes/fourMValidation.route");
 const stsFormRoutes = require("./routes/stsForm.route");
