@@ -33,6 +33,7 @@ const resolveSmtpSettings = () => {
 }
 
 const smtpSettings = resolveSmtpSettings()
+const mailFromAddress = String(process.env.SMTP_FROM || process.env.SMTP_USER || '').trim()
 
 const transporter = nodemailer.createTransport({
   host: smtpSettings.host,
@@ -46,7 +47,26 @@ const transporter = nodemailer.createTransport({
   tls: { rejectUnauthorized: false },
 })
 
+const getMailFromAddress = () => {
+  if (!mailFromAddress) {
+    throw new Error('SMTP_FROM or SMTP_USER must be configured to send emails')
+  }
+
+  return mailFromAddress
+}
+
+const describeSmtpSettings = () => ({
+  host: smtpSettings.host || null,
+  port: smtpSettings.port || null,
+  secure: smtpSettings.secure,
+  requireTLS: smtpSettings.requireTLS,
+  useAuth: smtpSettings.useAuth,
+  hasFromAddress: !!mailFromAddress,
+})
+
 module.exports = {
+  describeSmtpSettings,
+  getMailFromAddress,
   transporter,
   smtpSettings,
 }

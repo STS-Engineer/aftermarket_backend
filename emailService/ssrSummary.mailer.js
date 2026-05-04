@@ -1,4 +1,4 @@
-const { transporter } = require('./mailTransport')
+const { transporter, getMailFromAddress } = require('./mailTransport')
 const { XLSX_CONTENT_TYPE, buildPricingCalculatorBuffer } = require('./pricingCalculatorWorkbook')
 const { buildSubmissionSummaryPdfBuffer } = require('./summaryPdfBuilder')
 const { getSalesRepDisplayName } = require('../utils/salesRep')
@@ -375,7 +375,7 @@ const sendSubmissionSummaryEmails = async ({ ssr, submittedFormKey, submittedFor
   await sendMailOnce({
     dedupeKey: ['submission-summary', recipientEmails.sort().join(','), submittedFormKey, ssr?.id || ''].join('|'),
     mailOptions: {
-      from: process.env.SMTP_FROM || process.env.SMTP_USER,
+      from: getMailFromAddress(),
       to: recipientEmails.join(','),
       subject,
       html: buildSummaryHtml({

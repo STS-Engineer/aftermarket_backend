@@ -1,4 +1,4 @@
-const { transporter } = require('./mailTransport')
+const { transporter, getMailFromAddress } = require('./mailTransport')
 const { generateFourMAccessToken, generateStsAccessToken } = require('./ssr.mailer')
 const { getSalesRepDisplayName } = require('../utils/salesRep')
 const { getUserRecipientsByRole } = require('../services/userRoleRecipient.service')
@@ -139,7 +139,7 @@ const sendWorkflowReminderEmail = async ({ ssr, formKey, formLabel, startedAt, d
   const recipientNames = recipients.map((recipient) => recipient.name).join(' & ')
 
   await transporter.sendMail({
-    from: process.env.SMTP_FROM || process.env.SMTP_USER,
+    from: getMailFromAddress(),
     to: recipientEmails.join(','),
     subject: `[AVOCarbon] Reminder - ${formLabel} pending - ${ssr?.productReference || `SSR ${ssr?.id || ''}`}`.trim(),
     html: buildReminderHtml({

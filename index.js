@@ -13,6 +13,7 @@ const userRoutes = require("./routes/userRoutes");
 const salesRoutes = require('./routes/salesRoutes');
 const rawMaterialMetricsRoutes = require('./routes/rawMaterialMetrics.route');
 const { startWorkflowReminderScheduler } = require('./services/workflowReminder.service');
+const { describeSmtpSettings } = require('./emailService/mailTransport');
 
 const app = express();
 
@@ -51,6 +52,7 @@ async function startServer() {
     await sequelize.authenticate();
     console.log("PostgreSQL connected successfully");
     console.log("Models synchronized successfully");
+    console.log("SMTP settings:", describeSmtpSettings());
 
     startWorkflowReminderScheduler();
 

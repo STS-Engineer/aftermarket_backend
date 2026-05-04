@@ -1,20 +1,8 @@
-const nodemailer = require('nodemailer')
 const jwt = require('jsonwebtoken')
 const { getSalesRepDisplayName } = require('../utils/salesRep')
 const { getUserRecipientsByRole } = require('../services/userRoleRecipient.service')
 const { buildFrontendUrl } = require('../utils/frontendUrl')
-
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: parseInt(process.env.SMTP_PORT || '587', 10),
-  secure: process.env.SMTP_SECURE === 'true',
-  requireTLS: process.env.SMTP_SECURE !== 'true',
-  auth: process.env.SMTP_USER ? {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  } : undefined,
-  tls: { rejectUnauthorized: false },
-})
+const { transporter, getMailFromAddress } = require('./mailTransport')
 
 const RECENT_EMAIL_WINDOW_MS = 5 * 60 * 1000
 const recentEmailKeys = new Map()
@@ -654,7 +642,7 @@ const sendNewSmallSerialRequestEmails = async ({ ssr }) => {
     await sendMailOnce({
       dedupeKey: ['new-ssr', siteRecipientEmails.slice().sort().join(','), ssr.id, action?.actionUrl || ''].join('|'),
       mailOptions: {
-        from: process.env.SMTP_FROM || process.env.SMTP_USER,
+        from: getMailFromAddress(),
         to: siteRecipientEmails.join(','),
         subject: buildSubject(),
         html: buildHtml({
@@ -690,7 +678,7 @@ const sendNewSmallSerialRequestEmails = async ({ ssr }) => {
     await sendMailOnce({
       dedupeKey: ['new-ssr', stsRecipientEmails.slice().sort().join(','), ssr.id, action.actionUrl].join('|'),
       mailOptions: {
-        from: process.env.SMTP_FROM || process.env.SMTP_USER,
+        from: getMailFromAddress(),
         to: stsRecipientEmails.join(','),
         subject: buildStsSubject(),
         html: buildHtml({
@@ -727,7 +715,7 @@ const sendKamRequestConfirmationEmail = async ({ ssr }) => {
   await sendMailOnce({
     dedupeKey: ['kam-request-confirmation', normalizeEmail(recipient.email), ssr.id].join('|'),
     mailOptions: {
-      from: process.env.SMTP_FROM || process.env.SMTP_USER,
+      from: getMailFromAddress(),
       to: recipient.email,
       subject: buildKamConfirmationSubject(ssr),
       html: buildKamConfirmationHtml({
@@ -898,7 +886,7 @@ const sendStsFormSubmittedEmailToSiteRecipients = async ({ ssr, fourMValidation,
   await sendMailOnce({
     dedupeKey: ['sts-submitted', recipientEmails.slice().sort().join(','), ssr.id, accessToken].join('|'),
     mailOptions: {
-      from: process.env.SMTP_FROM || process.env.SMTP_USER,
+      from: getMailFromAddress(),
       to: recipientEmails.join(','),
       subject: 'AfterMarket Demand Analysis:  Small Series',
       html: buildStsCompletionHtml({

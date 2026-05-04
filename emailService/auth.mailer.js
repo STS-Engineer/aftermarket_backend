@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken')
-const { transporter } = require('./mailTransport')
+const { transporter, getMailFromAddress } = require('./mailTransport')
 const { buildFrontendUrl } = require('../utils/frontendUrl')
 
 const generatePasswordResetToken = ({ memberId, email }) => jwt.sign(
@@ -68,7 +68,7 @@ const sendPasswordResetEmail = async ({ email, recipientName, token }) => {
   const resetUrl = buildFrontendUrl(`reset-password/${token}`)
 
   await transporter.sendMail({
-    from: process.env.SMTP_FROM || process.env.SMTP_USER,
+    from: getMailFromAddress(),
     to: email,
     subject: '[AVOCarbon] Reset your password',
     html: buildPasswordResetHtml({
