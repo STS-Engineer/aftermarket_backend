@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken')
 const { transporter } = require('./mailTransport')
+const { buildFrontendUrl } = require('../utils/frontendUrl')
 
 const generatePasswordResetToken = ({ memberId, email }) => jwt.sign(
   { memberId, email, purpose: 'password_reset' },
@@ -64,8 +65,7 @@ const buildPasswordResetHtml = ({ recipientName, resetUrl }) => `
 `
 
 const sendPasswordResetEmail = async ({ email, recipientName, token }) => {
-  const frontendBaseUrl = process.env.FRONTEND_URL 
-  const resetUrl = `${frontendBaseUrl}/reset-password/${token}`
+  const resetUrl = buildFrontendUrl(`reset-password/${token}`)
 
   await transporter.sendMail({
     from: process.env.SMTP_FROM || process.env.SMTP_USER,

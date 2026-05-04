@@ -2,6 +2,7 @@ const nodemailer = require('nodemailer')
 const jwt = require('jsonwebtoken')
 const { getSalesRepDisplayName } = require('../utils/salesRep')
 const { getUserRecipientsByRole } = require('../services/userRoleRecipient.service')
+const { buildFrontendUrl } = require('../utils/frontendUrl')
 
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
@@ -617,14 +618,14 @@ const getKamRecipient = (ssr) => {
   }
 }
 
-const getRecipientAction = ({ recipientKey, ssrId, frontendBaseUrl }) => {
+const getRecipientAction = ({ recipientKey, ssrId }) => {
   if (recipientKey === 'site' || recipientKey === 'fadwa') {
     const token = generateFourMAccessToken(ssrId)
 
     return {
       title: 'Next Step',
       description: 'Open the 4M validation form for this request. The request information will already be loaded.',
-      actionUrl: `${frontendBaseUrl}/4M-validation/${token}`,
+      actionUrl: buildFrontendUrl(`4M-validation/${token}`),
       buttonLabel: 'Open 4M Validation Form',
     }
   }
@@ -633,7 +634,6 @@ const getRecipientAction = ({ recipientKey, ssrId, frontendBaseUrl }) => {
 }
 
 const sendNewSmallSerialRequestEmails = async ({ ssr }) => {
-  const frontendBaseUrl = process.env.FRONTEND_URL 
   const { siteRecipients, stsRecipients } = await getInitialWorkflowRecipients()
   const siteRecipientEmails = siteRecipients.map((recipient) => recipient.email)
   const siteRecipientNames = siteRecipients.map((recipient) => recipient.name).join(' & ') || 'Team'
@@ -649,7 +649,6 @@ const sendNewSmallSerialRequestEmails = async ({ ssr }) => {
     const action = getRecipientAction({
       recipientKey: 'site',
       ssrId: ssr.id,
-      frontendBaseUrl,
     })
 
     await sendMailOnce({
@@ -684,7 +683,7 @@ const sendNewSmallSerialRequestEmails = async ({ ssr }) => {
     const action = {
       title: 'Next Step',
       description: 'Open the STS form for this request. The request information will already be loaded.',
-      actionUrl: `${frontendBaseUrl}/sts-form/${generateStsAccessToken(ssr.id)}`,
+      actionUrl: buildFrontendUrl(`sts-form/${generateStsAccessToken(ssr.id)}`),
       buttonLabel: 'Open STS Form',
     }
 
@@ -886,7 +885,6 @@ const buildStsCompletionHtml = ({ recipientName, ssr, fourMValidation, stsForm, 
 
 const sendStsFormSubmittedEmailToSiteRecipients = async ({ ssr, fourMValidation, stsForm }) => {
   const recipients = await getUserRecipientsByRole('site')
-  const frontendBaseUrl = process.env.FRONTEND_URL 
   const accessToken = generateStsAccessToken(ssr.id)
   const fourMAccessToken = generateFourMAccessToken(ssr.id)
   const recipientEmails = recipients.map((recipient) => recipient.email)
@@ -908,12 +906,12 @@ const sendStsFormSubmittedEmailToSiteRecipients = async ({ ssr, fourMValidation,
         ssr,
         fourMValidation,
         stsForm,
-        actionUrl: `${frontendBaseUrl}/product-inventory-validation/${accessToken}`,
+        actionUrl: buildFrontendUrl(`product-inventory-validation/${accessToken}`),
         formLinks: {
-          fourM: `${frontendBaseUrl}/4M-validation/${fourMAccessToken}`,
-          productInventory: `${frontendBaseUrl}/product-inventory-validation/${accessToken}`,
-          rmAvailability: `${frontendBaseUrl}/rm-availability-validation/${accessToken}`,
-          specificRmStudy: `${frontendBaseUrl}/specific-rm-study-form/${accessToken}`,
+          fourM: buildFrontendUrl(`4M-validation/${fourMAccessToken}`),
+          productInventory: buildFrontendUrl(`product-inventory-validation/${accessToken}`),
+          rmAvailability: buildFrontendUrl(`rm-availability-validation/${accessToken}`),
+          specificRmStudy: buildFrontendUrl(`specific-rm-study-form/${accessToken}`),
         },
       }),
     },

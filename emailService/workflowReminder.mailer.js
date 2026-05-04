@@ -2,6 +2,7 @@ const { transporter } = require('./mailTransport')
 const { generateFourMAccessToken, generateStsAccessToken } = require('./ssr.mailer')
 const { getSalesRepDisplayName } = require('../utils/salesRep')
 const { getUserRecipientsByRole } = require('../services/userRoleRecipient.service')
+const { buildFrontendUrl } = require('../utils/frontendUrl')
 
 const normalizeEmail = (value) => String(value || '').trim().toLowerCase()
 
@@ -45,22 +46,21 @@ const getRecipientGroup = async (formKey) => {
 }
 
 const getActionUrl = (formKey, ssrId) => {
-  const frontendBaseUrl = process.env.FRONTEND_URL 
   const stsToken = generateStsAccessToken(ssrId)
 
   switch (formKey) {
     case 'fourM':
-      return `${frontendBaseUrl}/4M-validation/${generateFourMAccessToken(ssrId)}`
+      return buildFrontendUrl(`4M-validation/${generateFourMAccessToken(ssrId)}`)
     case 'sts':
-      return `${frontendBaseUrl}/sts-form/${stsToken}`
+      return buildFrontendUrl(`sts-form/${stsToken}`)
     case 'productInventory':
-      return `${frontendBaseUrl}/product-inventory-validation/${stsToken}`
+      return buildFrontendUrl(`product-inventory-validation/${stsToken}`)
     case 'rmAvailability':
-      return `${frontendBaseUrl}/rm-availability-validation/${stsToken}`
+      return buildFrontendUrl(`rm-availability-validation/${stsToken}`)
     case 'specificRMStudy':
-      return `${frontendBaseUrl}/specific-rm-study-form/${stsToken}`
+      return buildFrontendUrl(`specific-rm-study-form/${stsToken}`)
     default:
-      return frontendBaseUrl
+      return buildFrontendUrl()
   }
 }
 
